@@ -4,6 +4,20 @@ README.md
 .env
 .env.example 
 
+# backend
+backend/DELIVERY_SUMMARY.md
+backend/DEPLOYMENT_CHECKLIST.md
+
+# Suggestions Readme:
+contracts/MARKETPLACE_DOCUMENTATION.md
+contracts/SECURITY_AUDIT_CHECKLIST.md
+backend/FIREBASE_BACKEND_SETUP.md
+backend/FIRESTORE_DATA_MODEL.md
+backend/FIRESTORE_DELIVERY_SUMMARY.md
+backend/FIRESTORE_QUICK_REFERENCE.md
+backend/IMPLEMENTATION_TODO.md
+
+
 # Foundry/Forge build artifacts
 contracts/out/
 contracts/cache/

@@ -1,0 +1,9 @@
+{
+  "projects": {
+    "default": "orange-farm-dev",
+    "staging": "orange-farm-staging",
+    "production": "orange-farm-prod"
+  },
+  "targets": {},
+  "etags": {}
+}

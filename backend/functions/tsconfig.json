@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "outDir": "lib",
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2020",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"],
+      "@types/*": ["./types/*"],
+      "@utils/*": ["./utils/*"],
+      "@auth/*": ["./auth/*"],
+      "@game/*": ["./game/*"],
+      "@marketplace/*": ["./marketplace/*"],
+      "@leaderboard/*": ["./leaderboard/*"]
+    }
+  },
+  "compileOnSave": true,
+  "include": ["src"],
+  "exclude": ["node_modules", "lib", "**/*.spec.ts", "**/*.test.ts"]
+}

@@ -1,0 +1,99 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(walletAddress) {
+      return isAuthenticated() && request.auth.uid == walletAddress;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    
+    function validateWalletAddress(address) {
+      return address.matches('^0x[a-fA-F0-9]{40}$');
+    }
+    
+    // Users collection - wallet-based access
+    match /users/{walletAddress} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(walletAddress) && validateWalletAddress(walletAddress);
+      
+      // User's private data subcollection
+      match /private/{document=**} {
+        allow read, write: if isOwner(walletAddress);
+      }
+    }
+    
+    // Assets collection - user-owned assets
+    match /assets/{walletAddress}/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(walletAddress);
+    }
+    
+    // Authentication nonces - temporary storage
+    match /auth_nonces/{nonceId} {
+      allow read: if isAuthenticated();
+      allow create: if true; // Allow unauthenticated creation for challenge
+      allow update, delete: if false; // Only Cloud Functions can modify
+    }
+    
+    // Leaderboard - read-only for clients
+    match /leaderboard/{rankId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // Transactions - user can read their own
+    match /transactions/{txId} {
+      allow read: if isAuthenticated() && 
+                     (resource.data.walletAddress == request.auth.uid || isAdmin());
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // Activity feed - user can read their own
+    match /activities/{walletAddress}/{document=**} {
+      allow read: if isOwner(walletAddress);
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // Game configuration - read-only for all authenticated users
+    match /gameConfig/{document=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // CMS pages - read-only for all
+    match /cms/{document=**} {
+      allow read: if true; // Public content
+      allow write: if isAdmin();
+    }
+    
+    // Support tickets - users can create and read their own
+    match /support/{ticketId} {
+      allow read: if isAuthenticated() && 
+                     (resource.data.walletAddress == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+    
+    // Admins collection - read-only, managed externally
+    match /admins/{walletAddress} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+    
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

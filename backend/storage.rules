@@ -1,0 +1,57 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(walletAddress) {
+      return isAuthenticated() && request.auth.uid == walletAddress;
+    }
+    
+    function isValidImageSize() {
+      return request.resource.size < 5 * 1024 * 1024; // 5MB
+    }
+    
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // Public assets - read-only
+    match /assets/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    // User avatars - authenticated write, public read
+    match /avatars/{walletAddress}/{fileName} {
+      allow read: if true;
+      allow write: if isOwner(walletAddress) && 
+                      isValidImageSize() && 
+                      isValidImageType();
+      allow delete: if isOwner(walletAddress);
+    }
+    
+    // User content - private
+    match /user-content/{walletAddress}/{allPaths=**} {
+      allow read, write: if isOwner(walletAddress) && isValidImageSize();
+      allow delete: if isOwner(walletAddress);
+    }
+    
+    // Temporary uploads - short-lived
+    match /temp/{walletAddress}/{fileName} {
+      allow read, write: if isOwner(walletAddress) && 
+                            isValidImageSize() &&
+                            request.time < timestamp.date(2024, 12, 31); // Auto-expire
+      allow delete: if isOwner(walletAddress);
+    }
+    
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
