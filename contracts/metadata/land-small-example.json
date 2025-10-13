@@ -1,0 +1,40 @@
+{
+  "name": "Orange Farm Land #1",
+  "description": "A small plot of fertile land in the Orange Farm ecosystem. Perfect for starting your farming journey with capacity for 2 AI bots.",
+  "image": "ipfs://QmExampleHash/land-small-1.png",
+  "external_url": "https://orange-farm.io/land/1",
+  "attributes": [
+    {
+      "trait_type": "Land Type",
+      "value": "Small"
+    },
+    {
+      "trait_type": "Base Capacity",
+      "value": 2,
+      "display_type": "number"
+    },
+    {
+      "trait_type": "Current Capacity",
+      "value": 2,
+      "display_type": "number"
+    },
+    {
+      "trait_type": "Expansions",
+      "value": 0,
+      "display_type": "number"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    },
+    {
+      "trait_type": "Visual Variant",
+      "value": "Grassland"
+    }
+  ],
+  "properties": {
+    "category": "Land",
+    "created_at": "2025-10-13T00:00:00Z",
+    "game_version": "1.0.0"
+  }
+}

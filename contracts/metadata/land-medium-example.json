@@ -1,0 +1,40 @@
+{
+  "name": "Orange Farm Land #2",
+  "description": "A medium-sized plot with rich soil in the Orange Farm ecosystem. Provides ample space for 5 AI bots to work efficiently.",
+  "image": "ipfs://QmExampleHash/land-medium-1.png",
+  "external_url": "https://orange-farm.io/land/2",
+  "attributes": [
+    {
+      "trait_type": "Land Type",
+      "value": "Medium"
+    },
+    {
+      "trait_type": "Base Capacity",
+      "value": 5,
+      "display_type": "number"
+    },
+    {
+      "trait_type": "Current Capacity",
+      "value": 5,
+      "display_type": "number"
+    },
+    {
+      "trait_type": "Expansions",
+      "value": 0,
+      "display_type": "number"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Uncommon"
+    },
+    {
+      "trait_type": "Visual Variant",
+      "value": "River Valley"
+    }
+  ],
+  "properties": {
+    "category": "Land",
+    "created_at": "2025-10-13T00:00:00Z",
+    "game_version": "1.0.0"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "name": "Orange Farm Bot #2 - Advanced",
+  "description": "An efficient Advanced AI farming bot with enhanced harvesting algorithms. Produces 25 oranges per cycle with 2 water units consumption.",
+  "image": "ipfs://QmExampleHash/bot-advanced-1.png",
+  "external_url": "https://orange-farm.io/bot/2",
+  "animation_url": "ipfs://QmExampleHash/bot-advanced-animation.mp4",
+  "attributes": [
+    {
+      "trait_type": "Bot Type",
+      "value": "Advanced"
+    },
+    {
+      "trait_type": "Harvest Rate",
+      "value": 25,
+      "display_type": "number",
+      "max_value": 50
+    },
+    {
+      "trait_type": "Water Consumption",
+      "value": 2,
+      "display_type": "number"
+    },
+    {
+      "trait_type": "Total Harvests",
+      "value": 0,
+      "display_type": "number"
+    },
+    {
+      "trait_type": "Status",
+      "value": "Unassigned"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Uncommon"
+    },
+    {
+      "trait_type": "Color Scheme",
+      "value": "Blue"
+    },
+    {
+      "trait_type": "Upgrade Tier",
+      "value": 2,
+      "display_type": "number",
+      "max_value": 3
+    }
+  ],
+  "properties": {
+    "category": "Bot",
+    "efficiency": "high",
+    "created_at": "2025-10-13T00:00:00Z",
+    "game_version": "1.0.0"
+  }
+}
