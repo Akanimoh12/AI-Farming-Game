@@ -1,787 +1,382 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAccount } from 'wagmi'
+import { useParams, useNavigate } from 'react-router-dom'
+import { ConnectButton } from '@rainbow-me/rainbowkit'
 import {
   User,
   Trophy,
   TrendingUp,
-  MapPin,
   Bot,
   Droplets,
-  Share2,
-  Download,
-  Edit,
-  Clock,
-  ArrowUpRight,
-  ArrowDownRight,
+  Copy,
+  CheckCircle,
   Users,
   Gift,
   Award,
-  Lock,
-  CheckCircle,
+  Loader2,
+  ExternalLink,
+  Home,
 } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardContent, Button, Modal } from '@components/common'
-import { useUserStore } from '@stores/userStore'
-
-interface Achievement {
-  id: string
-  name: string
-  description: string
-  icon: string
-  unlocked: boolean
-  unlockedAt?: string
-  progress?: number
-  maxProgress?: number
-  rarity: 'common' | 'rare' | 'epic' | 'legendary'
-}
-
-interface Transaction {
-  id: string
-  type: 'purchase' | 'sale' | 'harvest' | 'reward'
-  description: string
-  amount: string
-  asset?: string
-  timestamp: string
-  status: 'completed' | 'pending' | 'failed'
-  txHash?: string
-}
-
-interface ReferralData {
-  totalReferred: number
-  activeReferrals: number
-  totalRewards: string
-  referralCode: string
-  referrals: {
-    address: string
-    joinedAt: string
-    isActive: boolean
-    rewardsEarned: string
-  }[]
-}
-
-// Mock data - replace with actual data from Firestore
-const mockAchievements: Achievement[] = [
-  {
-    id: '1',
-    name: 'First Harvest',
-    description: 'Complete your first orange harvest',
-    icon: '🍊',
-    unlocked: true,
-    unlockedAt: '2025-10-01T10:00:00Z',
-    rarity: 'common',
-  },
-  {
-    id: '2',
-    name: 'Land Baron',
-    description: 'Own 10 plots of land',
-    icon: '🏞️',
-    unlocked: true,
-    unlockedAt: '2025-10-05T14:30:00Z',
-    progress: 10,
-    maxProgress: 10,
-    rarity: 'rare',
-  },
-  {
-    id: '3',
-    name: 'Bot Master',
-    description: 'Own 5 harvesting bots',
-    icon: '🤖',
-    unlocked: false,
-    progress: 3,
-    maxProgress: 5,
-    rarity: 'rare',
-  },
-  {
-    id: '4',
-    name: 'Orange Millionaire',
-    description: 'Harvest 1,000,000 oranges',
-    icon: '💰',
-    unlocked: false,
-    progress: 450000,
-    maxProgress: 1000000,
-    rarity: 'epic',
-  },
-  {
-    id: '5',
-    name: 'Top 10 Farmer',
-    description: 'Reach top 10 on the leaderboard',
-    icon: '🏆',
-    unlocked: true,
-    unlockedAt: '2025-10-10T09:15:00Z',
-    rarity: 'epic',
-  },
-  {
-    id: '6',
-    name: 'Legendary Farmer',
-    description: 'Reach #1 on the leaderboard',
-    icon: '👑',
-    unlocked: false,
-    rarity: 'legendary',
-  },
-]
-
-const mockTransactions: Transaction[] = [
-  {
-    id: '1',
-    type: 'purchase',
-    description: 'Purchased Land Plot #42',
-    amount: '-500',
-    asset: 'STT',
-    timestamp: '2025-10-13T15:30:00Z',
-    status: 'completed',
-    txHash: '0xabc123...',
-  },
-  {
-    id: '2',
-    type: 'harvest',
-    description: 'Harvested 1,250 oranges',
-    amount: '+1,250',
-    asset: 'ORANGE',
-    timestamp: '2025-10-13T12:00:00Z',
-    status: 'completed',
-    txHash: '0xdef456...',
-  },
-  {
-    id: '3',
-    type: 'sale',
-    description: 'Sold 500 oranges',
-    amount: '+250',
-    asset: 'STT',
-    timestamp: '2025-10-12T18:45:00Z',
-    status: 'completed',
-    txHash: '0xghi789...',
-  },
-  {
-    id: '4',
-    type: 'reward',
-    description: 'Referral bonus',
-    amount: '+100',
-    asset: 'STT',
-    timestamp: '2025-10-12T10:20:00Z',
-    status: 'completed',
-    txHash: '0xjkl012...',
-  },
-]
-
-const mockReferralData: ReferralData = {
-  totalReferred: 5,
-  activeReferrals: 3,
-  totalRewards: '450',
-  referralCode: 'ORANGE-ABC123',
-  referrals: [
-    {
-      address: '0x1234...5678',
-      joinedAt: '2025-10-01T10:00:00Z',
-      isActive: true,
-      rewardsEarned: '150',
-    },
-    {
-      address: '0x2345...6789',
-      joinedAt: '2025-10-05T14:30:00Z',
-      isActive: true,
-      rewardsEarned: '200',
-    },
-    {
-      address: '0x3456...7890',
-      joinedAt: '2025-10-08T09:15:00Z',
-      isActive: true,
-      rewardsEarned: '100',
-    },
-  ],
-}
+import { motion } from 'framer-motion'
+import {
+  usePlayerProfile,
+  usePlayerStats,
+  usePlayerRank,
+  useReferralData,
+  useUserLands,
+  useUserBots,
+  useTokenBalances,
+  formatTokenAmount,
+} from '@hooks/useContracts'
+import { showSuccessToast } from '@stores/uiStore'
 
 export default function Profile() {
-  const { address } = useAccount()
-  const { profile } = useUserStore()
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [showShareModal, setShowShareModal] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
-  const transactionsPerPage = 5
+  const { address: connectedAddress } = useAccount()
+  const { address: routeAddress } = useParams<{ address: string }>()
+  const navigate = useNavigate()
+  const [copiedReferralCode, setCopiedReferralCode] = useState(false)
 
-  // Profile data
-  const username = profile?.username || 'Anonymous Farmer'
-  const totalOranges = profile?.totalEarnings || '0'
-  const level = profile?.level || 1
-  const rank = 999 // TODO: Add rank to UserProfile type and get from Firestore
-  const plotsOwned = 8 // TODO: Get from LandNFT contract
-  const botsOwned = 3 // TODO: Get from BotNFT contract
-  const waterBalance = 100 // TODO: Get from WaterToken contract
+  // Use route address if viewing someone else's profile, otherwise use connected address
+  const profileAddress = routeAddress || connectedAddress
 
-  // Calculate pagination
-  const indexOfLastTransaction = currentPage * transactionsPerPage
-  const indexOfFirstTransaction = indexOfLastTransaction - transactionsPerPage
-  const currentTransactions = mockTransactions.slice(
-    indexOfFirstTransaction,
-    indexOfLastTransaction
-  )
-  const totalPages = Math.ceil(mockTransactions.length / transactionsPerPage)
+  // Fetch profile data from blockchain
+  const { profile, isLoading: profileLoading } = usePlayerProfile(profileAddress)
+  const { stats, isLoading: statsLoading } = usePlayerStats(profileAddress)
+  const { rank, isLoading: rankLoading } = usePlayerRank(profileAddress)
+  const { referredPlayers, totalRewards } = useReferralData(profileAddress)
+  
+  // Fetch assets
+  const { landIds } = useUserLands()
+  const { botIds } = useUserBots()
+  const { orangeBalance, waterBalance, isLoading: balancesLoading } = useTokenBalances()
 
-  // Get achievement stats
-  const unlockedAchievements = mockAchievements.filter((a) => a.unlocked).length
-  const totalAchievements = mockAchievements.length
+  const isOwnProfile = connectedAddress && profileAddress?.toLowerCase() === connectedAddress.toLowerCase()
+  const isLoading = profileLoading || statsLoading || rankLoading
 
-  const handleEditProfile = () => {
-    setShowEditModal(true)
-  }
-
-  const handleShareProfile = () => {
-    setShowShareModal(true)
-  }
-
-  const handleExportData = () => {
-    const data = {
-      address,
-      profile,
-      achievements: mockAchievements,
-      transactions: mockTransactions,
-      referrals: mockReferralData,
-      exportedAt: new Date().toISOString(),
-    }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `orange-farm-profile-${address?.slice(0, 8)}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const copyReferralCode = () => {
-    navigator.clipboard.writeText(mockReferralData.referralCode)
-    alert('Referral code copied!') // TODO: Replace with toast notification using sonner
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
-
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
-
-  const getRarityColor = (rarity: Achievement['rarity']) => {
-    switch (rarity) {
-      case 'common':
-        return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
-      case 'rare':
-        return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-      case 'epic':
-        return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
-      case 'legendary':
-        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+  // Copy referral code to clipboard
+  const handleCopyReferralCode = () => {
+    if (profile?.referralCode) {
+      navigator.clipboard.writeText(profile.referralCode)
+      setCopiedReferralCode(true)
+      showSuccessToast('Copied!', 'Referral code copied to clipboard')
+      setTimeout(() => setCopiedReferralCode(false), 2000)
     }
   }
 
-  const getTransactionIcon = (type: Transaction['type']) => {
-    switch (type) {
-      case 'purchase':
-        return <ArrowDownRight className="h-4 w-4 text-red-400" />
-      case 'sale':
-        return <ArrowUpRight className="h-4 w-4 text-green-400" />
-      case 'harvest':
-        return <Trophy className="h-4 w-4 text-primary" />
-      case 'reward':
-        return <Gift className="h-4 w-4 text-secondary" />
-    }
+  // Format registration date
+  const registrationDate = useMemo(() => {
+    if (!profile?.registrationTimestamp) return 'Unknown'
+    const date = new Date(Number(profile.registrationTimestamp) * 1000)
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  }, [profile?.registrationTimestamp])
+
+  // Not connected state
+  if (!connectedAddress && !routeAddress) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass rounded-2xl p-12 border-2 border-white/10 text-center max-w-md">
+          <User className="h-20 w-20 mx-auto mb-6 text-gray-400" />
+          <h2 className="text-3xl font-bold mb-4">Connect Your Wallet</h2>
+          <p className="text-gray-400 mb-6">
+            Connect your wallet to view your profile and farming stats
+          </p>
+          <ConnectButton />
+        </div>
+      </div>
+    )
   }
 
-  return (
-    <div className="min-h-screen bg-dark-300 p-4 md:p-6 lg:p-8 space-y-8">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-gradient mb-3">My Profile</h1>
-          <p className="text-base md:text-lg text-gray-400">Track your progress and achievements</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Button variant="secondary" size="md" icon={<Edit />} onClick={handleEditProfile}>
-            Edit Profile
-          </Button>
-          <Button variant="ghost" size="md" icon={<Share2 />} onClick={handleShareProfile}>
-            Share
-          </Button>
-          <Button variant="ghost" size="md" icon={<Download />} onClick={handleExportData}>
-            Export Data
-          </Button>
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-16 w-16 mx-auto mb-4 animate-spin text-primary" />
+          <p className="text-xl text-gray-400">Loading profile from blockchain...</p>
         </div>
       </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-        <Card variant="glass" padding="none">
-          <CardContent className="p-6 flex flex-col items-center text-center">
-            <div className="h-14 w-14 rounded-full bg-primary/20 flex items-center justify-center mb-3">
-              <Trophy className="h-7 w-7 text-primary" />
-            </div>
-            <div className="text-3xl md:text-4xl font-bold text-primary">{totalOranges}</div>
-            <div className="text-sm md:text-base text-gray-400 mt-1">Total Oranges</div>
-          </CardContent>
-        </Card>
-
-        <Card className="glass">
-          <CardContent className="p-6 flex flex-col items-center text-center">
-            <div className="h-14 w-14 rounded-full bg-secondary/20 flex items-center justify-center mb-3">
-              <TrendingUp className="h-7 w-7 text-secondary" />
-            </div>
-            <div className="text-3xl md:text-4xl font-bold text-secondary">{level}</div>
-            <div className="text-sm md:text-base text-gray-400 mt-1">Level</div>
-          </CardContent>
-        </Card>
-
-        <Card className="glass">
-          <CardContent className="p-6 flex flex-col items-center text-center">
-            <div className="h-14 w-14 rounded-full bg-yellow-500/20 flex items-center justify-center mb-3">
-              <Award className="h-7 w-7 text-yellow-500" />
-            </div>
-            <div className="text-3xl md:text-4xl font-bold text-yellow-500">#{rank}</div>
-            <div className="text-sm md:text-base text-gray-400 mt-1">Rank</div>
-          </CardContent>
-        </Card>
-
-        <Card className="glass">
-          <CardContent className="p-6 flex flex-col items-center text-center">
-            <div className="h-14 w-14 rounded-full bg-green-500/20 flex items-center justify-center mb-3">
-              <MapPin className="h-7 w-7 text-green-500" />
-            </div>
-            <div className="text-3xl md:text-4xl font-bold text-green-500">{plotsOwned}</div>
-            <div className="text-sm md:text-base text-gray-400 mt-1">Plots Owned</div>
-          </CardContent>
-        </Card>
-
-        <Card className="glass">
-          <CardContent className="p-6 flex flex-col items-center text-center">
-            <div className="h-14 w-14 rounded-full bg-blue-500/20 flex items-center justify-center mb-3">
-              <Bot className="h-7 w-7 text-blue-500" />
-            </div>
-            <div className="text-3xl md:text-4xl font-bold text-blue-500">{botsOwned}</div>
-            <div className="text-sm md:text-base text-gray-400 mt-1">Bots Owned</div>
-          </CardContent>
-        </Card>
-
-        <Card className="glass">
-          <CardContent className="p-6 flex flex-col items-center text-center">
-            <div className="h-14 w-14 rounded-full bg-cyan-500/20 flex items-center justify-center mb-3">
-              <Droplets className="h-7 w-7 text-cyan-500" />
-            </div>
-            <div className="text-3xl md:text-4xl font-bold text-cyan-500">{waterBalance}</div>
-            <div className="text-sm md:text-base text-gray-400 mt-1">Water Units</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Left Column - Achievements & Referrals */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Achievements Section */}
-          <Card className="glass">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Trophy className="h-5 w-5 text-primary" />
-                  Achievements
-                </span>
-                <span className="text-sm font-normal text-gray-400">
-                  {unlockedAchievements}/{totalAchievements} Unlocked
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {mockAchievements.map((achievement) => (
-                  <div
-                    key={achievement.id}
-                    className={`
-                      relative p-4 rounded-lg border-2 transition-all
-                      ${
-                        achievement.unlocked
-                          ? getRarityColor(achievement.rarity)
-                          : 'bg-dark-100/50 border-dark-100 opacity-50'
-                      }
-                    `}
-                  >
-                    {/* Achievement Icon */}
-                    <div className="text-4xl mb-2 text-center">{achievement.icon}</div>
-
-                    {/* Achievement Name */}
-                    <div className="text-sm font-semibold text-center mb-1">
-                      {achievement.name}
-                    </div>
-
-                    {/* Achievement Description */}
-                    <div className="text-xs text-gray-400 text-center mb-2">
-                      {achievement.description}
-                    </div>
-
-                    {/* Progress Bar (if applicable) */}
-                    {achievement.maxProgress && (
-                      <div className="mt-2">
-                        <div className="h-1.5 bg-dark-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-primary to-secondary transition-all"
-                            style={{
-                              width: `${
-                                ((achievement.progress || 0) / achievement.maxProgress) * 100
-                              }%`,
-                            }}
-                          />
-                        </div>
-                        <div className="text-xs text-gray-400 text-center mt-1">
-                          {achievement.progress?.toLocaleString()}/{achievement.maxProgress.toLocaleString()}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Unlock Status */}
-                    {achievement.unlocked ? (
-                      <div className="absolute top-2 right-2">
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      </div>
-                    ) : (
-                      <div className="absolute top-2 right-2">
-                        <Lock className="h-5 w-5 text-gray-600" />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Transaction History */}
-          <Card className="glass">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-secondary" />
-                Transaction History
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {currentTransactions.map((tx) => (
-                  <div
-                    key={tx.id}
-                    className="flex items-center justify-between p-3 bg-dark-100/50 rounded-lg hover:bg-dark-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="h-10 w-10 rounded-full bg-dark-200 flex items-center justify-center">
-                        {getTransactionIcon(tx.type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm">{tx.description}</div>
-                        <div className="text-xs text-gray-400">
-                          {formatDate(tx.timestamp)} at {formatTime(tx.timestamp)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div
-                        className={`font-bold text-sm ${
-                          tx.amount.startsWith('+') ? 'text-green-400' : 'text-red-400'
-                        }`}
-                      >
-                        {tx.amount} {tx.asset}
-                      </div>
-                      {tx.txHash && (
-                        <a
-                          href={`https://explorer.somnia.network/tx/${tx.txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-400 hover:underline"
-                        >
-                          View TX
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    Previous
-                  </Button>
-                  <span className="text-sm text-gray-400">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - User Info & Referrals */}
-        <div className="space-y-6">
-          {/* User Info Card */}
-          <Card className="glass">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                Profile Info
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl font-bold">
-                  {username.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <div className="font-semibold text-lg">{username}</div>
-                  <div className="text-xs text-gray-400 font-mono">
-                    {address?.slice(0, 6)}...{address?.slice(-4)}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2 pt-4 border-t border-dark-100">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Member Since</span>
-                  <span className="font-medium">Oct 2025</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Total Harvests</span>
-                  <span className="font-medium">{profile?.totalHarvests || 0}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Best Rank</span>
-                  <span className="font-medium">#{rank}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Referral Section */}
-          <Card className="glass">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-secondary" />
-                Referrals
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Referral Stats */}
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="p-3 bg-dark-100/50 rounded-lg">
-                  <div className="text-2xl font-bold text-primary">
-                    {mockReferralData.totalReferred}
-                  </div>
-                  <div className="text-xs text-gray-400">Total</div>
-                </div>
-                <div className="p-3 bg-dark-100/50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-500">
-                    {mockReferralData.activeReferrals}
-                  </div>
-                  <div className="text-xs text-gray-400">Active</div>
-                </div>
-                <div className="p-3 bg-dark-100/50 rounded-lg">
-                  <div className="text-2xl font-bold text-secondary">
-                    {mockReferralData.totalRewards}
-                  </div>
-                  <div className="text-xs text-gray-400">Rewards</div>
-                </div>
-              </div>
-
-              {/* Referral Code */}
-              <div>
-                <div className="text-sm text-gray-400 mb-2">Your Referral Code</div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={mockReferralData.referralCode}
-                    readOnly
-                    className="flex-1 px-3 py-2 bg-dark-100 border border-dark-100 rounded-lg text-sm font-mono"
-                  />
-                  <Button variant="secondary" size="sm" onClick={copyReferralCode}>
-                    Copy
-                  </Button>
-                </div>
-              </div>
-
-              {/* Recent Referrals */}
-              <div>
-                <div className="text-sm text-gray-400 mb-2">Recent Referrals</div>
-                <div className="space-y-2">
-                  {mockReferralData.referrals.slice(0, 3).map((referral, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-2 bg-dark-100/50 rounded-lg"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`h-2 w-2 rounded-full ${
-                            referral.isActive ? 'bg-green-500' : 'bg-gray-500'
-                          }`}
-                        />
-                        <span className="text-xs font-mono">{referral.address}</span>
-                      </div>
-                      <span className="text-xs text-secondary">+{referral.rewardsEarned}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Edit Profile Modal */}
-      {showEditModal && (
-        <EditProfileModal onClose={() => setShowEditModal(false)} currentUsername={username} />
-      )}
-
-      {/* Share Profile Modal */}
-      {showShareModal && (
-        <ShareProfileModal onClose={() => setShowShareModal(false)} address={address || ''} />
-      )}
-    </div>
-  )
-}
-
-// Edit Profile Modal Component
-interface EditProfileModalProps {
-  onClose: () => void
-  currentUsername: string
-}
-
-function EditProfileModal({ onClose, currentUsername }: EditProfileModalProps) {
-  const [username, setUsername] = useState(currentUsername)
-  const [bio, setBio] = useState('')
-  const [avatar, setAvatar] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-
-  const handleSave = async () => {
-    setIsLoading(true)
-    // TODO: Implement profile update
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsLoading(false)
-    onClose()
+    )
   }
 
-  return (
-    <Modal onClose={onClose}>
-      <div className="p-6 space-y-4">
-        <h2 className="text-2xl font-display font-bold text-gradient">Edit Profile</h2>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 bg-dark-100 border border-dark-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Enter username"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">Bio</label>
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              className="w-full px-4 py-2 bg-dark-100 border border-dark-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-              rows={4}
-              placeholder="Tell us about yourself..."
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">Avatar URL</label>
-            <input
-              type="text"
-              value={avatar}
-              onChange={(e) => setAvatar(e.target.value)}
-              className="w-full px-4 py-2 bg-dark-100 border border-dark-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="https://..."
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-3 pt-4">
-          <Button variant="primary" onClick={handleSave} loading={isLoading} className="flex-1">
-            Save Changes
-          </Button>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
+  // Profile not found
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass rounded-2xl p-12 border-2 border-white/10 text-center max-w-md">
+          <User className="h-20 w-20 mx-auto mb-6 text-gray-400" />
+          <h2 className="text-3xl font-bold mb-4">Profile Not Found</h2>
+          <p className="text-gray-400 mb-6">
+            This address hasn't registered yet or doesn't exist
+          </p>
+          <button onClick={() => navigate('/')} className="btn btn-primary">
+            <Home className="h-5 w-5 mr-2" />
+            Go Home
+          </button>
         </div>
       </div>
-    </Modal>
-  )
-}
-
-// Share Profile Modal Component
-interface ShareProfileModalProps {
-  onClose: () => void
-  address: string
-}
-
-function ShareProfileModal({ onClose, address }: ShareProfileModalProps) {
-  const profileUrl = `https://orangefarm.io/profile/${address}`
-
-  const copyUrl = () => {
-    navigator.clipboard.writeText(profileUrl)
-    alert('Profile URL copied!')
-  }
-
-  const shareOnTwitter = () => {
-    const text = `Check out my Orange Farm profile! 🍊🌾`
-    window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(profileUrl)}`,
-      '_blank'
     )
   }
 
   return (
-    <Modal onClose={onClose}>
-      <div className="p-6 space-y-4">
-        <h2 className="text-2xl font-display font-bold text-gradient">Share Profile</h2>
+    <div className="space-y-8">
+      {/* Profile Header */}
+      <div className="glass rounded-2xl p-8 border-2 border-white/10">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+          {/* Left: Avatar & Info */}
+          <div className="flex items-start gap-6">
+            {/* Avatar */}
+            <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl flex items-center justify-center text-5xl shrink-0">
+              🧑‍🌾
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">Profile URL</label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={profileUrl}
-              readOnly
-              className="flex-1 px-4 py-2 bg-dark-100 border border-dark-100 rounded-lg text-sm"
-            />
-            <Button variant="secondary" size="sm" onClick={copyUrl}>
-              Copy
-            </Button>
+            {/* Info */}
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold mb-2">
+                {profile.username || 'Anonymous Farmer'}
+              </h1>
+              <p className="text-gray-400 font-mono text-sm mb-4">
+                {profileAddress?.slice(0, 10)}...{profileAddress?.slice(-8)}
+              </p>
+              <a
+                href={`https://explorer.somnia.network/address/${profileAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+              >
+                View on Explorer <ExternalLink className="h-4 w-4" />
+              </a>
+              <p className="text-sm text-gray-500 mt-2">
+                🗓️ Joined {registrationDate}
+              </p>
+            </div>
+          </div>
+
+          {/* Right: Quick Stats */}
+          <div className="flex flex-col gap-2">
+            <div className="glass rounded-xl p-4 border border-white/10 text-center">
+              <p className="text-xs text-gray-400 mb-1">Global Rank</p>
+              <p className="text-3xl font-bold text-primary">
+                {rankLoading ? '...' : rank ? `#${Number(rank)}` : 'Unranked'}
+              </p>
+            </div>
+            <div className="glass rounded-xl p-4 border border-white/10 text-center">
+              <p className="text-xs text-gray-400 mb-1">Level</p>
+              <p className="text-3xl font-bold text-white">{stats?.level || 0}</p>
+            </div>
           </div>
         </div>
-
-        <div className="flex gap-3 pt-4">
-          <Button variant="primary" onClick={shareOnTwitter} className="flex-1">
-            Share on Twitter
-          </Button>
-          <Button variant="ghost" onClick={onClose}>
-            Close
-          </Button>
-        </div>
       </div>
-    </Modal>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Total Oranges */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="glass rounded-2xl p-6 border-2 border-white/10"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
+              <Trophy className="h-6 w-6 text-primary" />
+            </div>
+            <p className="text-sm text-gray-400">Total Harvest</p>
+          </div>
+          <p className="text-3xl font-bold text-primary">
+            {stats ? formatTokenAmount(stats.totalOrangesCommitted) : '0'} 🍊
+          </p>
+        </motion.div>
+
+        {/* Total Harvests */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="glass rounded-2xl p-6 border-2 border-white/10"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-green-400" />
+            </div>
+            <p className="text-sm text-gray-400">Total Harvests</p>
+          </div>
+          <p className="text-3xl font-bold">{stats ? Number(stats.totalHarvests) : 0}</p>
+        </motion.div>
+
+        {/* Lands Owned */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="glass rounded-2xl p-6 border-2 border-white/10"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+              <Home className="h-6 w-6 text-blue-400" />
+            </div>
+            <p className="text-sm text-gray-400">Land Plots</p>
+          </div>
+          <p className="text-3xl font-bold">{landIds?.length || 0}</p>
+        </motion.div>
+
+        {/* Bots Owned */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="glass rounded-2xl p-6 border-2 border-white/10"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+              <Bot className="h-6 w-6 text-purple-400" />
+            </div>
+            <p className="text-sm text-gray-400">AI Bots</p>
+          </div>
+          <p className="text-3xl font-bold">{botIds?.length || 0}</p>
+        </motion.div>
+      </div>
+
+      {/* Token Balances (Only show for own profile) */}
+      {isOwnProfile && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass rounded-2xl p-6 border-2 border-primary/30"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold">$ORANGE Balance</h3>
+              <Trophy className="h-6 w-6 text-primary" />
+            </div>
+            <p className="text-4xl font-bold text-primary">
+              {balancesLoading ? '...' : formatTokenAmount(orangeBalance || 0n)}
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass rounded-2xl p-6 border-2 border-blue-500/30"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold">Water Tokens</h3>
+              <Droplets className="h-6 w-6 text-blue-400" />
+            </div>
+            <p className="text-4xl font-bold text-blue-400">
+              {balancesLoading ? '...' : formatTokenAmount(waterBalance || 0n)}
+            </p>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Referral Section (Only show for own profile) */}
+      {isOwnProfile && profile.referralCode && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-2xl p-8 border-2 border-white/10"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <Gift className="h-8 w-8 text-primary" />
+            <h2 className="text-3xl font-bold">Referral Program</h2>
+          </div>
+
+          {/* Referral Code */}
+          <div className="glass rounded-xl p-6 border border-primary/30 mb-6">
+            <p className="text-sm text-gray-400 mb-2">Your Referral Code</p>
+            <div className="flex items-center gap-3">
+              <p className="text-3xl font-bold text-primary font-mono flex-1">
+                {profile.referralCode}
+              </p>
+              <button
+                onClick={handleCopyReferralCode}
+                className="btn btn-primary flex items-center gap-2"
+              >
+                {copiedReferralCode ? (
+                  <>
+                    <CheckCircle className="h-5 w-5" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-5 w-5" />
+                    Copy
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mt-3">
+              Share this code with friends to earn rewards when they join!
+            </p>
+          </div>
+
+          {/* Referral Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="glass rounded-xl p-4 border border-white/10 text-center">
+              <Users className="h-8 w-8 mx-auto mb-2 text-primary" />
+              <p className="text-2xl font-bold">{referredPlayers.length}</p>
+              <p className="text-sm text-gray-400">Referred Friends</p>
+            </div>
+            <div className="glass rounded-xl p-4 border border-white/10 text-center">
+              <Trophy className="h-8 w-8 mx-auto mb-2 text-primary" />
+              <p className="text-2xl font-bold text-primary">
+                {formatTokenAmount(totalRewards)}
+              </p>
+              <p className="text-sm text-gray-400">Total Rewards</p>
+            </div>
+            <div className="glass rounded-xl p-4 border border-white/10 text-center">
+              <Award className="h-8 w-8 mx-auto mb-2 text-green-400" />
+              <p className="text-2xl font-bold text-green-400">
+                {referredPlayers.filter((addr) => addr !== '0x0000000000000000000000000000000000000000').length}
+              </p>
+              <p className="text-sm text-gray-400">Active Referrals</p>
+            </div>
+          </div>
+
+          {/* Referred Players List */}
+          {referredPlayers.length > 0 && referredPlayers[0] !== '0x0000000000000000000000000000000000000000' && (
+            <div>
+              <h3 className="text-xl font-bold mb-4">Your Referrals</h3>
+              <div className="space-y-2">
+                {referredPlayers
+                  .filter((addr) => addr !== '0x0000000000000000000000000000000000000000')
+                  .map((playerAddress, index) => (
+                    <div
+                      key={playerAddress}
+                      className="glass rounded-xl p-4 border border-white/10 flex items-center justify-between hover:border-primary/50 transition-all cursor-pointer"
+                      onClick={() => navigate(`/profile/${playerAddress}`)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center font-bold">
+                          #{index + 1}
+                        </div>
+                        <p className="font-mono">
+                          {playerAddress.slice(0, 10)}...{playerAddress.slice(-8)}
+                        </p>
+                      </div>
+                      <ExternalLink className="h-5 w-5 text-gray-400" />
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* Viewing someone else's profile */}
+      {!isOwnProfile && (
+        <div className="glass rounded-2xl p-6 border-2 border-white/10 text-center">
+          <p className="text-gray-400">
+            You are viewing {profile.username || 'Anonymous Farmer'}'s profile
+          </p>
+          <button
+            onClick={() => navigate(`/profile/${connectedAddress}`)}
+            className="btn btn-primary mt-4"
+          >
+            View My Profile
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

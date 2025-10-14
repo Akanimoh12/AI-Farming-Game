@@ -307,12 +307,23 @@ export function useRegisterPlayer() {
   const { writeContract, data: hash, isPending, isSuccess, error } = useWriteContract()
 
   const register = (username: string, referralCode?: string) => {
-    writeContract({
-      address: CONTRACTS.gameRegistry,
-      abi: ABIS.gameRegistry,
-      functionName: 'registerPlayer',
-      args: [username, referralCode || ''],
-    })
+    console.log('🔵 useRegisterPlayer - Initiating registration')
+    console.log('Contract address:', CONTRACTS.gameRegistry)
+    console.log('Username:', username)
+    console.log('Referral code:', referralCode || '(empty)')
+    
+    try {
+      writeContract({
+        address: CONTRACTS.gameRegistry,
+        abi: ABIS.gameRegistry,
+        functionName: 'registerPlayer',
+        args: [username, referralCode || ''],
+      })
+      console.log('✅ writeContract called successfully')
+    } catch (err) {
+      console.error('❌ Error calling writeContract:', err)
+      throw err
+    }
   }
 
   return {
