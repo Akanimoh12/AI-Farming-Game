@@ -184,7 +184,7 @@ contract GameRegistry is
         emit PlayerRegistered(msg.sender, username, referralCode, referrer);
         _claimStarterPack(msg.sender, referrer);
     }
-
+    
     /**
      * @notice Internal function to distribute starter pack
      * @param player Player address

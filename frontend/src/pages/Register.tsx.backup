@@ -22,8 +22,7 @@ export default function RegisterPage() {
   }, [isConnected, address, isRegistered])
 
   const [username, setUsername] = useState('')
-  const [myReferralCode, setMyReferralCode] = useState('')
-  const [referredByCode, setReferredByCode] = useState('')
+  const [referralCode, setReferralCode] = useState('')
   const [step, setStep] = useState<'register' | 'complete'>('register')
   const [showCongrats, setShowCongrats] = useState(false)
 
@@ -58,20 +57,12 @@ export default function RegisterPage() {
       } else if (errorMessage.includes('already registered')) {
         showErrorToast('Already Registered', 'This address is already registered')
         navigate('/dashboard', { replace: true })
-      } else if (errorMessage.includes('invalid referrer code')) {
-        showErrorToast('Invalid Referral Code', 'The "Referred By" code does not exist. Leave it empty or use a valid code from someone already registered.')
-      } else if (errorMessage.includes('referral code taken')) {
-        showErrorToast('Referral Code Taken', 'Your referral code is already used by another player. Please choose a different one.')
-      } else if (errorMessage.includes('username taken')) {
-        showErrorToast('Username Taken', 'This username is already used. Please choose a different one.')
-      } else if (errorMessage.includes('cannot refer yourself')) {
-        showErrorToast('Invalid Referral', 'You cannot use your own referral code!')
       } else if (errorMessage.includes('Connector not connected') || errorMessage.includes('connector')) {
         showErrorToast('Wallet Not Connected', 'Please connect your wallet and try again')
       } else if (errorMessage.includes('insufficient funds')) {
-        showErrorToast('Insufficient Funds', 'You need more STT tokens to pay for gas')
+        showErrorToast('Insufficient Funds', 'You need more tokens to pay for gas')
       } else {
-        showErrorToast('Registration Failed', errorMessage.slice(0, 150))
+        showErrorToast('Registration Failed', errorMessage.slice(0, 100))
       }
     }
   }, [registerError, navigate])
@@ -120,28 +111,6 @@ export default function RegisterPage() {
       return
     }
 
-    // Validate referral code
-    if (!myReferralCode.trim()) {
-      showErrorToast('Referral Code Required', 'Please create your unique referral code')
-      return
-    }
-
-    if (myReferralCode.length < 3 || myReferralCode.length > 16) {
-      showErrorToast('Invalid Referral Code', 'Referral code must be 3-16 characters')
-      return
-    }
-
-    if (!/^\w+$/.test(myReferralCode)) {
-      showErrorToast('Invalid Characters', 'Referral code can only contain letters, numbers, and underscores')
-      return
-    }
-
-    // Validate referred by code if provided
-    if (referredByCode.trim() && !/^\w+$/.test(referredByCode)) {
-      showErrorToast('Invalid Referral Code', 'Referred by code can only contain letters, numbers, and underscores')
-      return
-    }
-
     // Prevent double submission
     if (isRegistering || isWaitingRegister) {
       console.log('Registration already in progress')
@@ -149,11 +118,10 @@ export default function RegisterPage() {
     }
 
     console.log('Attempting to register with username:', username.trim())
-    console.log('My referral code:', myReferralCode.trim())
-    console.log('Referred by code:', referredByCode.trim() || '(empty)')
+    console.log('Referral code:', referralCode.trim() || '(empty)')
     
     // Call register function - this will trigger MetaMask
-    register(username.trim(), myReferralCode.trim(), referredByCode.trim())
+    register(username.trim(), referralCode.trim())
   }
 
 
@@ -226,46 +194,23 @@ export default function RegisterPage() {
                 <p className="text-sm text-gray-500 mt-2">3-20 characters</p>
               </div>
 
-              {/* My Referral Code Input */}
+              {/* Referral Code Input */}
               <div>
                 <label className="block text-base md:text-lg font-medium text-gray-300 mb-3">
-                  Your Referral Code <span className="text-red-400">*</span>
+                  Referral Code <span className="text-gray-500">(optional)</span>
                 </label>
                 <div className="relative">
                   <Gift className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
                   <input
                     type="text"
-                    value={myReferralCode}
-                    onChange={(e) => setMyReferralCode(e.target.value)}
-                    placeholder="Create your unique code (e.g., Akan2024)"
-                    maxLength={16}
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value)}
+                    placeholder="Enter referral code"
                     disabled={isRegistering || isWaitingRegister}
                     className="w-full pl-14 pr-6 py-4 text-lg bg-dark-100 border-2 border-gray-700 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors disabled:opacity-50"
                   />
                 </div>
-                <p className="text-sm text-gray-500 mt-2">Share this code with friends to earn rewards!</p>
-              </div>
-
-              {/* Referred By Code Input */}
-              <div>
-                <label className="block text-base md:text-lg font-medium text-gray-300 mb-3">
-                  Referred By <span className="text-gray-500">(optional - leave empty if no one invited you)</span>
-                </label>
-                <div className="relative">
-                  <Gift className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
-                  <input
-                    type="text"
-                    value={referredByCode}
-                    onChange={(e) => setReferredByCode(e.target.value)}
-                    placeholder="Leave empty or enter friend's code"
-                    maxLength={16}
-                    disabled={isRegistering || isWaitingRegister}
-                    className="w-full pl-14 pr-6 py-4 text-lg bg-dark-100 border-2 border-gray-700 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors disabled:opacity-50"
-                  />
-                </div>
-                <p className="text-sm text-yellow-500 mt-2">
-                  ⚠️ Only use a code if someone invited you AND they're already registered!
-                </p>
+                <p className="text-sm text-gray-500 mt-2">Get bonus rewards with a referral code</p>
               </div>
 
               {/* Error Display */}

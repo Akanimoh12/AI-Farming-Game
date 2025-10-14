@@ -306,18 +306,19 @@ export function useDashboardStats() {
 export function useRegisterPlayer() {
   const { writeContract, data: hash, isPending, isSuccess, error } = useWriteContract()
 
-  const register = (username: string, referralCode?: string) => {
+  const register = (username: string, referralCode?: string, referredByCode?: string) => {
     console.log('🔵 useRegisterPlayer - Initiating registration')
     console.log('Contract address:', CONTRACTS.gameRegistry)
     console.log('Username:', username)
     console.log('Referral code:', referralCode || '(empty)')
+    console.log('Referred by code:', referredByCode || '(empty)')
     
     try {
       writeContract({
         address: CONTRACTS.gameRegistry,
         abi: ABIS.gameRegistry,
-        functionName: 'registerPlayer',
-        args: [username, referralCode || ''],
+        functionName: 'register', // Fixed: was 'registerPlayer', should be 'register'
+        args: [username, referralCode || '', referredByCode || ''], // 3 parameters required
       })
       console.log('✅ writeContract called successfully')
     } catch (err) {
