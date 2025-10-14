@@ -1,0 +1,16 @@
+{
+  "network": "somnia-testnet",
+  "chainId": 50312,
+  "deployer": "0x58C25c26666B31241C67Cf7B9a82e325eB07c342",
+  "timestamp": 1760437844,
+  "contracts": {
+    "MockOrangeToken": "0x6f457540f0F38e564b680b9b7c90393C46b4A8cb",
+    "WaterToken": "0xb4519d73e72E132f3eB472B5F89163a45073437d",
+    "LandNFT": "0x6767Dd3830A88DED122c5dA4d05D052227097886",
+    "BotNFT": "0x952f9cD0bC2f7Adab4dD06E4d40F91D312b42943",
+    "GameRegistry": "0xcD19D73DDf4974Ba20eB7d3Edd44458732ab9430",
+    "RealTimeHarvest": "0x4B001ec1F48dAE2883Fa2Dba87bE7ADc66F1B3f7",
+    "Marketplace": "0x58C9baE65d526549dab2764AF4fD28A32e295696",
+    "HarvestSettlement": "0xAc9556512080c7d812AEC70AB769dbf14BbDC1Da"
+  }
+}

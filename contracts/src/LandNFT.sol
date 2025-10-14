@@ -26,14 +26,12 @@ contract LandNFT is
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    /// @notice Land types with different base capacities
     enum LandType {
-        Small,   // 2 bots
-        Medium,  // 5 bots
-        Large    // 10 bots
+        Small,
+        Medium,
+        Large
     }
 
-    /// @notice Land plot data structure
     struct LandData {
         LandType landType;
         uint8 capacity;
@@ -41,37 +39,17 @@ contract LandNFT is
         uint64 creationTimestamp;
     }
 
-    /// @notice Base URI for IPFS metadata
     string private _baseTokenURI;
-
-    /// @notice Token ID counter
     uint256 private _nextTokenId;
-
-    /// @notice Mapping from token ID to land data
     mapping(uint256 => LandData) public landData;
-
-    /// @notice Cost to expand land capacity by 1 bot slot (in MockOrangeDAO tokens)
+    mapping(address => uint256[]) private _ownerLands;
+    mapping(uint256 => uint256[]) private _landAssignedBots;
     uint256 public expansionCost;
-
-    /// @notice Reference to MockOrangeToken contract
     address public mockOrangeToken;
 
-    /// @notice Events
-    event LandMinted(
-        address indexed owner,
-        uint256 indexed tokenId,
-        LandType landType,
-        uint8 capacity
-    );
-
-    event LandExpanded(
-        uint256 indexed tokenId,
-        uint8 newCapacity,
-        uint8 expansionCount
-    );
-
+    event LandMinted(address indexed owner, uint256 indexed tokenId, LandType landType, uint8 capacity);
+    event LandExpanded(uint256 indexed tokenId, uint8 newCapacity, uint8 expansionCount);
     event BaseURIUpdated(string newBaseURI);
-
     event ExpansionCostUpdated(uint256 newCost);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -149,34 +127,22 @@ contract LandNFT is
         
         LandData storage land = landData[tokenId];
         
-        // Transfer expansion cost from user
         require(
             IERC20(mockOrangeToken).transferFrom(msg.sender, address(this), expansionCost),
             "LandNFT: payment failed"
         );
 
-        // Increase capacity
         land.capacity += 1;
         land.expansions += 1;
 
         emit LandExpanded(tokenId, land.capacity, land.expansions);
     }
 
-    /**
-     * @notice Get land capacity
-     * @param tokenId Token ID to query
-     * @return Current capacity
-     */
     function getCapacity(uint256 tokenId) external view returns (uint8) {
         require(ownerOf(tokenId) != address(0), "LandNFT: token does not exist");
         return landData[tokenId].capacity;
     }
 
-    /**
-     * @notice Get complete land data
-     * @param tokenId Token ID to query
-     * @return Land data structure
-     */
     function getLandData(uint256 tokenId) external view returns (LandData memory) {
         require(ownerOf(tokenId) != address(0), "LandNFT: token does not exist");
         return landData[tokenId];
@@ -241,33 +207,83 @@ contract LandNFT is
         return _nextTokenId - 1;
     }
 
-    /**
-     * @notice Override for UUPS upgrades
-     */
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
-
-    /**
-     * @notice Override tokenURI to return proper metadata URI
-     */
-    function tokenURI(
-        uint256 tokenId
-    ) public view override(ERC721Upgradeable, ERC721URIStorageUpgradeable) returns (string memory) {
-        return super.tokenURI(tokenId);
+    function getLandsByOwner(address owner) external view returns (uint256[] memory) {
+        return _ownerLands[owner];
     }
 
     /**
-     * @notice Override supportsInterface
+     * @notice Get detailed land information
      */
-    function supportsInterface(
-        bytes4 interfaceId
-    )
-        public
-        view
-        override(ERC721Upgradeable, ERC721URIStorageUpgradeable, AccessControlUpgradeable)
-        returns (bool)
-    {
+    function getLandInfo(uint256 tokenId) external view returns (address owner, LandType landType, uint8 capacity, uint8 expansions, uint64 creationTimestamp) {
+        require(_ownerOf(tokenId) != address(0), "LandNFT: invalid token");
+        
+        LandData memory data = landData[tokenId];
+        owner = ownerOf(tokenId);
+        landType = data.landType;
+        capacity = data.capacity;
+        expansions = data.expansions;
+        creationTimestamp = data.creationTimestamp;
+    }
+
+    function getAssignedBots(uint256 tokenId) external view returns (uint256[] memory) {
+        require(_ownerOf(tokenId) != address(0), "LandNFT: invalid token");
+        return _landAssignedBots[tokenId];
+    }
+
+    function addBotToLand(uint256 tokenId, uint256 botId) external onlyRole(MINTER_ROLE) {
+        require(_ownerOf(tokenId) != address(0), "LandNFT: invalid token");
+        _landAssignedBots[tokenId].push(botId);
+    }
+
+    /**
+     * @notice Remove a bot from a land (called by BotNFT contract)
+     * @param tokenId Land token ID
+     * @param botId Bot token ID to remove
+     */
+    function removeBotFromLand(uint256 tokenId, uint256 botId) external onlyRole(MINTER_ROLE) {
+        require(_ownerOf(tokenId) != address(0), "LandNFT: invalid token");
+        uint256[] storage bots = _landAssignedBots[tokenId];
+        for (uint256 i = 0; i < bots.length; i++) {
+            if (bots[i] == botId) {
+                bots[i] = bots[bots.length - 1];
+                bots.pop();
+                break;
+            }
+        }
+    }
+
+    function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
+        address from = _ownerOf(tokenId);
+        
+        if (from != address(0) && from != to) {
+            _removeFromOwnerArray(from, tokenId);
+        }
+        
+        if (to != address(0) && from != to) {
+            _ownerLands[to].push(tokenId);
+        }
+        
+        return super._update(to, tokenId, auth);
+    }
+
+    function _removeFromOwnerArray(address owner, uint256 tokenId) private {
+        uint256[] storage lands = _ownerLands[owner];
+        for (uint256 i = 0; i < lands.length; i++) {
+            if (lands[i] == tokenId) {
+                lands[i] = lands[lands.length - 1];
+                lands.pop();
+                break;
+            }
+        }
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
+
+    function tokenURI(uint256 tokenId) public view override(ERC721Upgradeable, ERC721URIStorageUpgradeable) returns (string memory) {
+        return super.tokenURI(tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721Upgradeable, ERC721URIStorageUpgradeable, AccessControlUpgradeable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 

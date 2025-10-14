@@ -31,14 +31,12 @@ contract BotNFT is
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    /// @notice Bot types with different performance characteristics
     enum BotType {
-        Basic,      // 10 oranges/cycle, 1 water/cycle
-        Advanced,   // 25 oranges/cycle, 2 water/cycle
-        Elite       // 50 oranges/cycle, 4 water/cycle
+        Basic,
+        Advanced,
+        Elite
     }
 
-    /// @notice Bot data structure
     struct BotData {
         BotType botType;
         uint16 harvestRate;
@@ -49,55 +47,19 @@ contract BotNFT is
         uint64 creationTimestamp;
     }
 
-    /// @notice Base URI for IPFS metadata
     string private _baseTokenURI;
-
-    /// @notice Token ID counter
     uint256 private _nextTokenId;
-
-    /// @notice Mapping from token ID to bot data
     mapping(uint256 => BotData) public botData;
-
-    /// @notice Mapping from land ID to array of assigned bot IDs
     mapping(uint256 => uint256[]) private _landBots;
-
-    /// @notice Reference to MockOrangeToken contract
+    mapping(address => uint256[]) private _ownerBots;
     address public mockOrangeToken;
-
-    /// @notice Reference to LandNFT contract
     address public landNFT;
-
-    /// @notice Upgrade costs for bot types (in MockOrangeDAO tokens)
     mapping(BotType => uint256) public upgradeCosts;
 
-    /// @notice Events
-    event BotMinted(
-        address indexed owner,
-        uint256 indexed tokenId,
-        BotType botType,
-        uint16 harvestRate,
-        uint8 waterConsumption
-    );
-
-    event BotAssigned(
-        uint256 indexed botId,
-        uint256 indexed landId,
-        address indexed owner
-    );
-
-    event BotUnassigned(
-        uint256 indexed botId,
-        uint256 indexed landId
-    );
-
-    event BotUpgraded(
-        uint256 indexed botId,
-        BotType oldType,
-        BotType newType,
-        uint16 newHarvestRate,
-        uint8 newWaterConsumption
-    );
-
+    event BotMinted(address indexed owner, uint256 indexed tokenId, BotType botType, uint16 harvestRate, uint8 waterConsumption);
+    event BotAssigned(uint256 indexed botId, uint256 indexed landId, address indexed owner);
+    event BotUnassigned(uint256 indexed botId, uint256 indexed landId);
+    event BotUpgraded(uint256 indexed botId, BotType oldType, BotType newType, uint16 newHarvestRate, uint8 newWaterConsumption);
     event BotActivated(uint256 indexed botId);
     event BotDeactivated(uint256 indexed botId);
     event BaseURIUpdated(string newBaseURI);
@@ -361,6 +323,84 @@ contract BotNFT is
      */
     function totalSupply() external view returns (uint256) {
         return _nextTokenId - 1;
+    }
+
+    /**
+     * @notice Get all bot token IDs owned by an address
+     * @param owner Owner address
+     * @return tokenIds Array of bot token IDs
+     */
+    function getBotsByOwner(address owner) external view returns (uint256[] memory) {
+        return _ownerBots[owner];
+    }
+
+    /**
+     * @notice Get detailed bot information
+     * @param tokenId Bot token ID
+     * @return owner Owner address
+     * @return botType Type of bot
+     * @return harvestRate Oranges per harvest
+     * @return waterConsumption Water per harvest
+     * @return assignedLandId Land this bot is on (0 if unassigned)
+     * @return isActive Whether bot is active
+     * @return totalHarvests Total harvests performed
+     */
+    function getBotInfo(uint256 tokenId) external view returns (
+        address owner,
+        BotType botType,
+        uint16 harvestRate,
+        uint8 waterConsumption,
+        uint256 assignedLandId,
+        bool isActive,
+        uint64 totalHarvests
+    ) {
+        require(_ownerOf(tokenId) != address(0), "BotNFT: invalid token");
+        
+        BotData memory data = botData[tokenId];
+        owner = ownerOf(tokenId);
+        botType = data.botType;
+        harvestRate = data.harvestRate;
+        waterConsumption = data.waterConsumption;
+        assignedLandId = data.assignedLandId;
+        isActive = data.isActive;
+        totalHarvests = data.totalHarvests;
+    }
+
+    /**
+     * @notice Override _update to track ownership
+     */
+    function _update(address to, uint256 tokenId, address auth)
+        internal
+        override
+        returns (address)
+    {
+        address from = _ownerOf(tokenId);
+        
+        // Remove from old owner's array
+        if (from != address(0) && from != to) {
+            _removeFromOwnerArray(from, tokenId);
+        }
+        
+        // Add to new owner's array
+        if (to != address(0) && from != to) {
+            _ownerBots[to].push(tokenId);
+        }
+        
+        return super._update(to, tokenId, auth);
+    }
+
+    /**
+     * @notice Remove token from owner's array
+     */
+    function _removeFromOwnerArray(address owner, uint256 tokenId) private {
+        uint256[] storage bots = _ownerBots[owner];
+        for (uint256 i = 0; i < bots.length; i++) {
+            if (bots[i] == tokenId) {
+                bots[i] = bots[bots.length - 1];
+                bots.pop();
+                break;
+            }
+        }
     }
 
     /**

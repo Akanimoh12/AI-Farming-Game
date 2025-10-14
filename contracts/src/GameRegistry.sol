@@ -39,7 +39,6 @@ contract GameRegistry is
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant GAME_MASTER_ROLE = keccak256("GAME_MASTER_ROLE");
 
-    /// @notice Player profile data
     struct PlayerProfile {
         string username;
         string referralCode;
@@ -48,7 +47,6 @@ contract GameRegistry is
         bool hasClaimedStarter;
     }
 
-    /// @notice Player on-chain stats
     struct PlayerStats {
         uint256 totalOrangesCommitted;
         uint32 level;
@@ -56,64 +54,29 @@ contract GameRegistry is
         uint64 totalHarvests;
     }
 
-    /// @notice Mapping from wallet to player profile
     mapping(address => PlayerProfile) public playerProfiles;
-
-    /// @notice Mapping from wallet to player stats
     mapping(address => PlayerStats) public playerStats;
-
-    /// @notice Mapping from username to wallet (for uniqueness check)
     mapping(string => address) public usernameToWallet;
-
-    /// @notice Mapping from referral code to wallet
     mapping(string => address) public referralCodeToWallet;
-
-    /// @notice Total registered players
+    
     uint256 public totalPlayers;
+    address[] private playerAddresses;
+    mapping(address => address[]) private _referredPlayers;
+    mapping(address => uint256) private _referralRewards;
 
-    /// @notice Contract references
     address public mockOrangeToken;
     address public landNFT;
     address public botNFT;
     address public waterToken;
 
-    /// @notice Starter pack configuration
     uint256 public starterTokenAmount;
     uint256 public starterWaterAmount;
     uint256 public referralReward;
-
-    /// @notice Events
-    event PlayerRegistered(
-        address indexed player,
-        string username,
-        string referralCode,
-        address indexed referredBy
-    );
-
-    event StarterPackClaimed(
-        address indexed player,
-        uint256 landId,
-        uint256 botId,
-        uint256 tokenAmount,
-        uint256 waterAmount
-    );
-
-    event ReferralRewarded(
-        address indexed referrer,
-        address indexed referee,
-        uint256 rewardAmount
-    );
-
-    event HarvestCommitted(
-        address indexed player,
-        uint256 orangeAmount,
-        uint64 timestamp
-    );
-
-    event LevelUp(
-        address indexed player,
-        uint32 newLevel
-    );
+    event PlayerRegistered(address indexed player, string username, string referralCode, address indexed referredBy);
+    event StarterPackClaimed(address indexed player, uint256 landId, uint256 botId, uint256 tokenAmount, uint256 waterAmount);
+    event ReferralRewarded(address indexed referrer, address indexed referee, uint256 rewardAmount);
+    event HarvestCommitted(address indexed player, uint256 orangeAmount, uint64 timestamp);
+    event LevelUp(address indexed player, uint32 newLevel);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -153,10 +116,9 @@ contract GameRegistry is
         botNFT = _botNFT;
         waterToken = _waterToken;
 
-        // Default starter pack configuration
-        starterTokenAmount = 50e18;  // 50 MockOrangeDAO tokens
-        starterWaterAmount = 50;      // 50 water units (0 decimals)
-        referralReward = 25e18;       // 25 MockOrangeDAO tokens
+        starterTokenAmount = 50e18;
+        starterWaterAmount = 50;
+        referralReward = 25e18;
     }
 
     /**
@@ -194,7 +156,6 @@ contract GameRegistry is
             require(referrer != msg.sender, "GameRegistry: cannot refer yourself");
         }
 
-        // Create player profile
         playerProfiles[msg.sender] = PlayerProfile({
             username: username,
             referralCode: referralCode,
@@ -203,7 +164,6 @@ contract GameRegistry is
             hasClaimedStarter: false
         });
 
-        // Initialize player stats
         playerStats[msg.sender] = PlayerStats({
             totalOrangesCommitted: 0,
             level: 1,
@@ -211,15 +171,17 @@ contract GameRegistry is
             totalHarvests: 0
         });
 
-        // Register username and referral code
         usernameToWallet[username] = msg.sender;
         referralCodeToWallet[referralCode] = msg.sender;
 
+        playerAddresses.push(msg.sender);
         totalPlayers++;
 
-        emit PlayerRegistered(msg.sender, username, referralCode, referrer);
+        if (referrer != address(0)) {
+            _referredPlayers[referrer].push(msg.sender);
+        }
 
-        // Automatically claim starter pack
+        emit PlayerRegistered(msg.sender, username, referralCode, referrer);
         _claimStarterPack(msg.sender, referrer);
     }
 
@@ -229,30 +191,22 @@ contract GameRegistry is
      * @param referrer Referrer address (can be zero)
      */
     function _claimStarterPack(address player, address referrer) private {
-        require(
-            !playerProfiles[player].hasClaimedStarter,
-            "GameRegistry: starter already claimed"
-        );
+        require(!playerProfiles[player].hasClaimedStarter, "GameRegistry: starter already claimed");
 
-        // Mint starter assets
         uint256 landId = ILandNFTMint(landNFT).mint(player, ILandNFTMint.LandType.Small);
         uint256 botId = IBotNFTMint(botNFT).mint(player, IBotNFTMint.BotType.Basic);
         
-        // Mint tokens and water
         IMockOrangeTokenMint(mockOrangeToken).mint(player, starterTokenAmount);
         IWaterTokenMint(waterToken).mint(player, starterWaterAmount);
 
-        // Mark as claimed
         playerProfiles[player].hasClaimedStarter = true;
 
         emit StarterPackClaimed(player, landId, botId, starterTokenAmount, starterWaterAmount);
 
-        // Process referral rewards
         if (referrer != address(0)) {
-            // Reward both referrer and referee
             IMockOrangeTokenMint(mockOrangeToken).mint(referrer, referralReward);
             IMockOrangeTokenMint(mockOrangeToken).mint(player, referralReward);
-
+            _referralRewards[referrer] += referralReward;
             emit ReferralRewarded(referrer, player, referralReward);
         }
     }
@@ -262,14 +216,8 @@ contract GameRegistry is
      * @param player Player address
      * @param orangeAmount Amount of oranges harvested
      */
-    function commitHarvest(
-        address player,
-        uint256 orangeAmount
-    ) external onlyRole(GAME_MASTER_ROLE) {
-        require(
-            playerProfiles[player].registrationTimestamp > 0,
-            "GameRegistry: player not registered"
-        );
+    function commitHarvest(address player, uint256 orangeAmount) external onlyRole(GAME_MASTER_ROLE) {
+        require(playerProfiles[player].registrationTimestamp > 0, "GameRegistry: player not registered");
 
         PlayerStats storage stats = playerStats[player];
         stats.totalOrangesCommitted += orangeAmount;
@@ -278,7 +226,6 @@ contract GameRegistry is
 
         emit HarvestCommitted(player, orangeAmount, uint64(block.timestamp));
 
-        // Check for level up (every 1000 oranges = 1 level)
         uint32 newLevel = uint32(stats.totalOrangesCommitted / 1000) + 1;
         if (newLevel > stats.level) {
             stats.level = newLevel;
@@ -286,61 +233,103 @@ contract GameRegistry is
         }
     }
 
-    /**
-     * @notice Get player profile
-     * @param player Player address
-     * @return Player profile data
-     */
     function getPlayerProfile(address player) external view returns (PlayerProfile memory) {
         return playerProfiles[player];
     }
 
-    /**
-     * @notice Get player stats
-     * @param player Player address
-     * @return Player stats data
-     */
     function getPlayerStats(address player) external view returns (PlayerStats memory) {
         return playerStats[player];
     }
 
-    /**
-     * @notice Check if username is available
-     * @param username Username to check
-     * @return True if available
-     */
     function isUsernameAvailable(string memory username) external view returns (bool) {
         return usernameToWallet[username] == address(0);
     }
 
-    /**
-     * @notice Check if referral code is available
-     * @param referralCode Referral code to check
-     * @return True if available
-     */
     function isReferralCodeAvailable(string memory referralCode) external view returns (bool) {
         return referralCodeToWallet[referralCode] == address(0);
     }
 
-    /**
-     * @notice Check if player is registered
-     * @param player Player address
-     * @return True if registered
-     */
     function isRegistered(address player) external view returns (bool) {
         return playerProfiles[player].registrationTimestamp > 0;
     }
 
-    /**
-     * @notice Get referral count for a player
-     * @param referrer Referrer address
-     * @return Count of players referred
-     */
     function getReferralCount(address referrer) external view returns (uint256) {
-        uint256 count = 0;
-        // Note: This is a simple implementation. For production, consider maintaining
-        // a separate mapping for efficiency
-        return count;
+        return _referredPlayers[referrer].length;
+    }
+
+    /**
+     * @notice Get leaderboard top players sorted by total oranges
+     */
+    function getLeaderboard(uint256 limit) external view returns (address[] memory players, uint256[] memory oranges, uint32[] memory levels) {
+        require(limit > 0 && limit <= 100, "GameRegistry: invalid limit");
+        
+        uint256 count = limit > totalPlayers ? totalPlayers : limit;
+        
+        address[] memory allPlayers = new address[](totalPlayers);
+        uint256[] memory allOranges = new uint256[](totalPlayers);
+        uint32[] memory allLevels = new uint32[](totalPlayers);
+        
+        for (uint256 i = 0; i < totalPlayers; i++) {
+            address player = playerAddresses[i];
+            allPlayers[i] = player;
+            allOranges[i] = playerStats[player].totalOrangesCommitted;
+            allLevels[i] = playerStats[player].level;
+        }
+        
+        for (uint256 i = 0; i < totalPlayers; i++) {
+            for (uint256 j = i + 1; j < totalPlayers; j++) {
+                if (allOranges[i] < allOranges[j]) {
+                    (allOranges[i], allOranges[j]) = (allOranges[j], allOranges[i]);
+                    (allPlayers[i], allPlayers[j]) = (allPlayers[j], allPlayers[i]);
+                    (allLevels[i], allLevels[j]) = (allLevels[j], allLevels[i]);
+                }
+            }
+        }
+        
+        players = new address[](count);
+        oranges = new uint256[](count);
+        levels = new uint32[](count);
+        
+        for (uint256 i = 0; i < count; i++) {
+            players[i] = allPlayers[i];
+            oranges[i] = allOranges[i];
+            levels[i] = allLevels[i];
+        }
+        
+        return (players, oranges, levels);
+    }
+
+    /**
+     * @notice Get player's rank on the leaderboard
+     */
+    function getPlayerRank(address player) external view returns (uint256 rank) {
+        if (playerProfiles[player].registrationTimestamp == 0) {
+            return 0;
+        }
+        
+        uint256 playerOranges = playerStats[player].totalOrangesCommitted;
+        uint256 betterPlayers = 0;
+        
+        for (uint256 i = 0; i < totalPlayers; i++) {
+            address otherPlayer = playerAddresses[i];
+            if (playerStats[otherPlayer].totalOrangesCommitted > playerOranges) {
+                betterPlayers++;
+            }
+        }
+        
+        return betterPlayers + 1;
+    }
+
+    /**
+     * @notice Get referral information for a player
+     */
+    function getReferralData(address player) external view returns (address referrer, address[] memory referredPlayers, uint256 totalRewards) {
+        PlayerProfile memory profile = playerProfiles[player];
+        referrer = profile.referredBy;
+        referredPlayers = _referredPlayers[player];
+        totalRewards = _referralRewards[player];
+        
+        return (referrer, referredPlayers, totalRewards);
     }
 
     /**
