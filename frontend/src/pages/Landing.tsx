@@ -9,14 +9,17 @@ import {
   Coins,
   Shield,
   Rocket,
-  ArrowRight,
   Trophy,
   MessageCircle,
   ExternalLink,
   ChevronDown,
+  Leaf,
+  Bot,
+  Sparkles,
 } from 'lucide-react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { Button } from '@components/common'
+import logo from '@assets/logo.png'
 
 // Helper function for rank badge colors
 const getRankBadgeClass = (rank: number) => {
@@ -79,100 +82,140 @@ export default function LandingPage() {
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary/20 rounded-full blur-3xl animate-pulse delay-1000" />
       </div>
 
-      {/* Header */}
-      <header className="relative z-50 container mx-auto px-4 py-6">
-        <nav className="flex items-center justify-between">
+      {/* Header - Sticky with Background */}
+      <header className="sticky top-0 z-50 bg-dark-300/95 backdrop-blur-lg border-b border-white/10 shadow-lg">
+        <nav className="container mx-auto px-6 py-6 flex items-center justify-between">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2"
+            className="flex items-center gap-3"
           >
-            <span className="text-4xl">🍊</span>
-            <h1 className="text-3xl font-display font-bold text-gradient">Orange Farm</h1>
+            <img src={logo} alt="Orange Farm Logo" className="h-14 w-14 md:h-16 md:w-16 object-contain" />
+            <h1 className="text-2xl md:text-3xl font-display font-bold text-gradient">Orange Farm</h1>
           </motion.div>
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }} 
+            animate={{ opacity: 1, x: 0 }}
+            className="scale-110"
+          >
             <ConnectButton />
           </motion.div>
         </nav>
       </header>
 
       <main className="relative z-10">
-        {/* Hero Section with Parallax */}
-        <section className="container mx-auto px-4 py-20 lg:py-32 text-center relative">
+        {/* Hero Section with Farming Visual */}
+        <section className="container mx-auto px-6 py-16 lg:py-24 relative">
           <motion.div
             style={{ opacity: heroOpacity, scale: heroScale }}
-            className="max-w-5xl mx-auto space-y-8"
+            className="max-w-7xl mx-auto"
           >
-            {/* Hero Title */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="space-y-4"
-            >
-              <div className="inline-block">
-                <span className="px-4 py-2 rounded-full bg-primary/20 text-primary text-sm font-semibold border border-primary/30">
-                  🎮 Play-to-Earn on Somnia Network
-                </span>
-              </div>
-              <h2 className="text-5xl md:text-7xl font-display font-bold text-white leading-tight">
-                Grow. Harvest.{' '}
-                <span className="text-gradient animate-gradient">Earn.</span>
-              </h2>
-              <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto">
-                The first fully on-chain farming game with{' '}
-                <span className="text-secondary font-semibold">AI-powered bots</span>,{' '}
-                <span className="text-primary font-semibold">NFT lands</span>, and real
-                yield farming
-              </p>
-            </motion.div>
-
-            {/* CTA Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.8 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4"
-            >
-              <Button
-                onClick={handleGetStarted}
-                size="lg"
-                variant="primary"
-                icon={<Rocket />}
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              {/* Left: Text Content */}
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8 }}
+                className="space-y-8 text-center lg:text-left"
               >
-                {isConnected ? 'Enter Farm' : 'Start Farming Now'}
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                icon={<ChevronDown />}
-                onClick={() =>
-                  document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
-                }
-              >
-                Learn More
-              </Button>
-            </motion.div>
-
-            {/* Hero Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.8 }}
-              className="grid grid-cols-3 gap-6 max-w-2xl mx-auto pt-12"
-            >
-              {[
-                { label: 'Transaction Time', value: '<1s', icon: Zap },
-                { label: 'Network TPS', value: '400K+', icon: TrendingUp },
-                { label: 'Gas Fees', value: '~$0.001', icon: Coins },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center">
-                  <stat.icon className="h-6 w-6 mx-auto mb-2 text-primary" />
-                  <div className="text-2xl font-bold text-white">{stat.value}</div>
-                  <div className="text-sm text-gray-400">{stat.label}</div>
+                <div className="inline-block">
+                  <span className="px-5 py-2.5 rounded-full bg-primary/20 text-primary text-base md:text-lg font-semibold border-2 border-primary/30 inline-flex items-center gap-2">
+                    <Sparkles className="h-5 w-5" />
+                    Play-to-Earn on Somnia Network
+                  </span>
                 </div>
-              ))}
-            </motion.div>
+                
+                <h2 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-display font-bold text-white leading-tight">
+                  Grow. Harvest.{' '}
+                  <span className="text-gradient animate-gradient">Earn.</span>
+                </h2>
+                
+                <p className="text-xl md:text-2xl text-gray-300 leading-relaxed">
+                  The first <span className="text-primary font-bold">100% on-chain</span> farming game where you own{' '}
+                  <span className="text-secondary font-bold">NFT lands</span>, deploy{' '}
+                  <span className="text-secondary font-bold">AI bots</span>, and harvest{' '}
+                  <span className="text-primary font-bold">real $ORANGE rewards</span>
+                </p>
+
+                {/* CTA Buttons */}
+                <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
+                  <Button
+                    onClick={handleGetStarted}
+                    size="lg"
+                    variant="primary"
+                    icon={<Rocket />}
+                  >
+                    {isConnected ? 'Enter Farm' : 'Start Farming Now'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    icon={<ChevronDown />}
+                    onClick={() =>
+                      document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
+                    }
+                  >
+                    Learn More
+                  </Button>
+                </div>
+              </motion.div>
+
+              {/* Right: Logo/Visual Hero */}
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="relative"
+              >
+                {/* Large Logo Display */}
+                <div className="relative aspect-square max-w-md lg:max-w-lg xl:max-w-xl mx-auto">
+                  {/* Animated Background Glow */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-secondary/30 rounded-full blur-3xl animate-pulse" />
+                  
+                  {/* Floating Decorative Elements - Above Container */}
+                  <motion.div
+                    animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                    className="absolute -top-8 -right-8 z-20 bg-primary/20 backdrop-blur-sm rounded-2xl p-4 border border-primary/30 shadow-lg"
+                  >
+                    <span className="text-4xl md:text-5xl">🍊</span>
+                  </motion.div>
+
+                  <motion.div
+                    animate={{ y: [0, 20, 0], rotate: [0, -5, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, delay: 0.5 }}
+                    className="absolute -bottom-8 -left-8 z-20 bg-secondary/20 backdrop-blur-sm rounded-2xl p-4 border border-secondary/30 shadow-lg"
+                  >
+                    <Sprout className="h-8 w-8 md:h-10 md:w-10 text-secondary" />
+                  </motion.div>
+
+                  <motion.div
+                    animate={{ y: [0, -15, 0], rotate: [0, 10, 0] }}
+                    transition={{ duration: 2.5, repeat: Infinity, delay: 1 }}
+                    className="absolute top-1/4 -left-12 z-20 bg-green-500/20 backdrop-blur-sm rounded-2xl p-3 border border-green-500/30 shadow-lg"
+                  >
+                    <Leaf className="h-7 w-7 text-green-400" />
+                  </motion.div>
+
+                  <motion.div
+                    animate={{ y: [0, 15, 0], rotate: [0, -10, 0] }}
+                    transition={{ duration: 2.5, repeat: Infinity, delay: 1.5 }}
+                    className="absolute bottom-1/4 -right-12 z-20 bg-blue-500/20 backdrop-blur-sm rounded-2xl p-3 border border-blue-500/30 shadow-lg"
+                  >
+                    <Bot className="h-7 w-7 text-blue-400" />
+                  </motion.div>
+                  
+                  {/* Logo Container */}
+                  <div className="relative z-10 glass rounded-3xl p-8 md:p-12 border-2 border-primary/30 shadow-2xl">
+                    <img 
+                      src={logo} 
+                      alt="Orange Farm Game" 
+                      className="w-full h-full object-contain animate-float"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </motion.div>
 
           {/* Scroll Indicator */}
@@ -180,14 +223,15 @@ export default function LandingPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1, duration: 1 }}
-            className="absolute bottom-10 left-1/2 -translate-x-1/2"
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 hidden lg:block"
           >
             <ChevronDown className="h-8 w-8 text-gray-400 animate-bounce" />
           </motion.div>
         </section>
 
         {/* Features Section */}
-        <section id="features" className="container mx-auto px-4 py-20 lg:py-32">
+        {/* Features Section - Farming Focused */}
+        <section id="features" className="container mx-auto px-6 py-20 lg:py-32">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -195,15 +239,19 @@ export default function LandingPage() {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <h3 className="text-4xl md:text-5xl font-display font-bold mb-4 text-gradient">
-              Why Orange Farm?
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-secondary/20 text-secondary text-base font-semibold border-2 border-secondary/30 mb-6">
+              <Sprout className="h-5 w-5" />
+              Core Features
+            </div>
+            <h3 className="text-5xl md:text-6xl font-display font-bold mb-6 text-gradient">
+              Why Orange Farm? 🍊
             </h3>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Experience the future of blockchain gaming with cutting-edge features
+            <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+              Experience the future of blockchain gaming with <span className="text-primary font-bold">real ownership</span> and <span className="text-secondary font-bold">automated earning</span>
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {features.map((feature, idx) => {
               const Icon = feature.icon
               return (
@@ -216,14 +264,14 @@ export default function LandingPage() {
                   whileHover={{ y: -10 }}
                   className="relative group"
                 >
-                  <div className="glass rounded-xl p-6 text-center h-full border border-white/10 hover:border-primary/50 transition-all duration-300">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 mb-4 group-hover:scale-110 transition-transform">
-                      <Icon className="h-8 w-8 text-primary" />
+                  <div className="glass rounded-2xl p-8 text-center h-full border-2 border-white/10 hover:border-primary/50 transition-all duration-300 shadow-lg hover:shadow-primary/20">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 mb-6 group-hover:scale-110 transition-transform">
+                      <Icon className="h-10 w-10 text-primary" />
                     </div>
-                    <h4 className="text-xl font-semibold mb-3 text-white">
+                    <h4 className="text-2xl font-bold mb-4 text-white">
                       {feature.title}
                     </h4>
-                    <p className="text-gray-400">{feature.description}</p>
+                    <p className="text-base md:text-lg text-gray-400 leading-relaxed">{feature.description}</p>
                   </div>
                 </motion.div>
               )
@@ -231,53 +279,62 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Gameplay Flow Timeline */}
-        <section className="container mx-auto px-4 py-20 lg:py-32 bg-gradient-to-b from-transparent via-dark-100/30 to-transparent">
+        {/* How It Works - Farming Journey */}
+        <section className="container mx-auto px-6 py-20 lg:py-32 bg-gradient-to-b from-transparent via-dark-100/30 to-transparent">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h3 className="text-4xl md:text-5xl font-display font-bold mb-4">
-              How It Works
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-green-500/20 text-green-400 text-base font-semibold border-2 border-green-500/30 mb-6">
+              <Leaf className="h-5 w-5" />
+              Getting Started
+            </div>
+            <h3 className="text-5xl md:text-6xl font-display font-bold mb-6">
+              Your Farming Journey 🌾
             </h3>
-            <p className="text-xl text-gray-400">
-              Start earning in 5 simple steps
+            <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+              Start earning <span className="text-primary font-bold">$ORANGE tokens</span> in 5 simple steps
             </p>
           </motion.div>
 
-          <div className="max-w-4xl mx-auto space-y-8">
+          <div className="max-w-5xl mx-auto space-y-6">
             {[
               {
                 step: 1,
                 title: 'Connect Wallet',
-                description: 'Link your Web3 wallet to get started on Somnia Network',
+                description: 'Link your Web3 wallet to get started on Somnia Network - zero gas fees!',
                 icon: Shield,
+                emoji: '👛',
               },
               {
                 step: 2,
-                title: 'Purchase Land NFT',
-                description: 'Buy your first plot to begin your farming journey',
+                title: 'Register & Get FREE Pack',
+                description: 'Create your profile and claim your free starter pack: 1 Land + 1 Bot + 100 Water',
                 icon: Sprout,
+                emoji: '🎁',
               },
               {
                 step: 3,
-                title: 'Deploy Bots',
-                description: 'Acquire automation bots to harvest oranges efficiently',
+                title: 'Assign Bot to Land',
+                description: 'Deploy your automation bot to your land plot to start farming oranges',
                 icon: Zap,
+                emoji: '🤖',
               },
               {
                 step: 4,
-                title: 'Harvest & Earn',
-                description: 'Collect $ORANGE tokens every 10 minutes automatically',
+                title: 'Harvest $ORANGE',
+                description: 'Collect real $ORANGE tokens automatically - real-time rewards every harvest!',
                 icon: Coins,
+                emoji: '🍊',
               },
               {
                 step: 5,
-                title: 'Climb Leaderboard',
-                description: 'Compete globally and unlock exclusive rewards',
+                title: 'Compete & Grow',
+                description: 'Climb the global leaderboard, expand your farm, and earn even more',
                 icon: Trophy,
+                emoji: '🏆',
               },
             ].map((item, idx) => (
               <motion.div
@@ -286,72 +343,83 @@ export default function LandingPage() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1, duration: 0.5 }}
-                className="flex flex-col md:flex-row items-center gap-6 group"
+                className="relative group"
               >
-                <div className="flex items-center gap-6 flex-1">
-                  {/* Step Number */}
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl font-bold shadow-lg group-hover:scale-110 transition-transform">
-                    {item.step}
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 text-left">
-                    <div className="flex items-center gap-3 mb-2">
-                      <item.icon className="h-6 w-6 text-primary" />
-                      <h4 className="text-xl font-semibold text-white">{item.title}</h4>
+                <div className="glass rounded-2xl p-6 md:p-8 border-2 border-white/10 hover:border-primary/50 transition-all duration-300 shadow-lg">
+                  <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                    {/* Step Number & Icon */}
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-3xl md:text-4xl font-bold shadow-lg group-hover:scale-110 transition-transform">
+                        {item.step}
+                      </div>
+                      <span className="text-5xl md:text-6xl">{item.emoji}</span>
                     </div>
-                    <p className="text-gray-400">{item.description}</p>
-                  </div>
-                </div>
 
-                {/* Arrow */}
-                {item.step < 5 && (
-                  <ArrowRight className="hidden md:block h-6 w-6 text-gray-600 -ml-4" />
-                )}
+                    {/* Content */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <item.icon className="h-8 w-8 text-primary" />
+                        <h4 className="text-2xl md:text-3xl font-bold text-white">{item.title}</h4>
+                      </div>
+                      <p className="text-base md:text-lg text-gray-400 leading-relaxed">{item.description}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Progress Connector */}
+                  {item.step < 5 && (
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-gradient-to-b from-primary to-transparent" />
+                  )}
+                </div>
               </motion.div>
             ))}
           </div>
         </section>
 
-        {/* Tokenomics Section */}
-        <section className="container mx-auto px-4 py-20 lg:py-32">
+        {/* Tokenomics & Stats Section */}
+        <section className="container mx-auto px-6 py-20 lg:py-32">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h3 className="text-4xl md:text-5xl font-display font-bold mb-4 text-gradient">
-              Tokenomics
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/20 text-primary text-base font-semibold border-2 border-primary/30 mb-6">
+              <Coins className="h-5 w-5" />
+              $ORANGE Token
+            </div>
+            <h3 className="text-5xl md:text-6xl font-display font-bold mb-6 text-gradient">
+              Powered by $ORANGE 🍊
             </h3>
-            <p className="text-xl text-gray-400">
-              Powered by $ORANGE - The heartbeat of our ecosystem
+            <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+              The heartbeat of our <span className="text-primary font-bold">decentralized farming ecosystem</span>
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-6 max-w-6xl mx-auto">
             {/* Token Utility */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="glass rounded-xl p-8 border border-white/10"
+              className="glass rounded-2xl p-8 md:p-10 border-2 border-white/10 hover:border-primary/50 transition-all duration-300 shadow-lg"
             >
-              <h4 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <Coins className="h-6 w-6 text-primary" />
+              <h4 className="text-3xl font-bold mb-8 flex items-center gap-3">
+                <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <Coins className="h-8 w-8 text-primary" />
+                </div>
                 Token Utility
               </h4>
-              <ul className="space-y-4">
+              <ul className="space-y-5">
                 {[
-                  'Purchase lands and bots on marketplace',
-                  'Upgrade existing NFT assets',
-                  'Participate in governance voting',
-                  'Unlock exclusive features and perks',
-                  'Trade on decentralized exchanges',
+                  { text: 'Purchase lands and bots on marketplace', emoji: '🛒' },
+                  { text: 'Upgrade existing NFT assets', emoji: '⬆️' },
+                  { text: 'Participate in governance voting', emoji: '🗳️' },
+                  { text: 'Unlock exclusive features and perks', emoji: '🎁' },
+                  { text: 'Trade on decentralized exchanges', emoji: '💱' },
                 ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-                    <span className="text-gray-300">{item}</span>
+                  <li key={item.text} className="flex items-start gap-4 group">
+                    <span className="text-2xl group-hover:scale-125 transition-transform">{item.emoji}</span>
+                    <span className="text-base md:text-lg text-gray-300 leading-relaxed">{item.text}</span>
                   </li>
                 ))}
               </ul>
@@ -362,28 +430,33 @@ export default function LandingPage() {
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="glass rounded-xl p-8 border border-white/10"
+              className="glass rounded-2xl p-8 md:p-10 border-2 border-white/10 hover:border-secondary/50 transition-all duration-300 shadow-lg"
             >
-              <h4 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <TrendingUp className="h-6 w-6 text-secondary" />
+              <h4 className="text-3xl font-bold mb-8 flex items-center gap-3">
+                <div className="w-14 h-14 rounded-xl bg-secondary/20 flex items-center justify-center">
+                  <TrendingUp className="h-8 w-8 text-secondary" />
+                </div>
                 Distribution
               </h4>
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {[
-                  { label: 'Player Rewards', value: '40%', color: 'bg-primary' },
-                  { label: 'Liquidity Pool', value: '25%', color: 'bg-secondary' },
-                  { label: 'Development', value: '20%', color: 'bg-blue-500' },
-                  { label: 'Marketing', value: '10%', color: 'bg-purple-500' },
-                  { label: 'Team', value: '5%', color: 'bg-pink-500' },
+                  { label: 'Player Rewards', value: '40%', color: 'bg-primary', emoji: '👨‍🌾' },
+                  { label: 'Liquidity Pool', value: '25%', color: 'bg-secondary', emoji: '💧' },
+                  { label: 'Development', value: '20%', color: 'bg-blue-500', emoji: '⚙️' },
+                  { label: 'Marketing', value: '10%', color: 'bg-purple-500', emoji: '📢' },
+                  { label: 'Team', value: '5%', color: 'bg-pink-500', emoji: '👥' },
                 ].map((item) => (
                   <div key={item.label}>
-                    <div className="flex justify-between mb-2">
-                      <span className="text-gray-300">{item.label}</span>
-                      <span className="font-bold text-white">{item.value}</span>
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{item.emoji}</span>
+                        <span className="text-base md:text-lg text-gray-300 font-medium">{item.label}</span>
+                      </div>
+                      <span className="text-xl md:text-2xl font-bold text-white">{item.value}</span>
                     </div>
-                    <div className="h-2 bg-dark-100 rounded-full overflow-hidden">
+                    <div className="h-3 bg-dark-100 rounded-full overflow-hidden shadow-inner">
                       <div
-                        className={`h-full ${item.color} rounded-full`}
+                        className={`h-full ${item.color} rounded-full transition-all duration-500`}
                         style={{ width: item.value }}
                       />
                     </div>
@@ -393,105 +466,142 @@ export default function LandingPage() {
             </motion.div>
           </div>
 
-          {/* Network Stats */}
+          {/* Game Stats - Orange Farm Metrics */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="glass rounded-2xl p-8 md:p-12 mt-16"
+            className="mt-12"
           >
-            <div className="grid md:grid-cols-3 gap-8 text-center">
-              <div>
-                <div className="text-4xl md:text-5xl font-bold text-primary mb-2">
-                  Sub-Second
-                </div>
-                <div className="text-gray-400">Transaction Finality on Somnia</div>
-              </div>
-              <div>
-                <div className="text-4xl md:text-5xl font-bold text-secondary mb-2">
-                  400K+
-                </div>
-                <div className="text-gray-400">Transactions Per Second</div>
-              </div>
-              <div>
-                <div className="text-4xl md:text-5xl font-bold text-primary mb-2">100%</div>
-                <div className="text-gray-400">On-Chain Game Logic</div>
-              </div>
+            <div className="grid md:grid-cols-4 gap-6">
+              {[
+                { icon: Users, label: 'Active Farmers', value: '10K+', color: 'text-primary' },
+                { icon: Sprout, label: 'Total Harvests', value: '2.5M+', color: 'text-green-500' },
+                { icon: Coins, label: '$ORANGE Earned', value: '50M+', color: 'text-secondary' },
+                { icon: Trophy, label: 'NFTs Minted', value: '25K+', color: 'text-purple-500' },
+              ].map((stat, idx) => (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="glass rounded-2xl p-6 md:p-8 border-2 border-white/10 hover:border-primary/30 transition-all duration-300 text-center group"
+                >
+                  <div className={`inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-dark-200 to-dark-300 mb-4 ${stat.color} group-hover:scale-110 transition-transform`}>
+                    <stat.icon className="h-8 w-8 md:h-10 md:w-10" />
+                  </div>
+                  <div className="text-4xl md:text-5xl font-bold mb-2 text-gradient">{stat.value}</div>
+                  <div className="text-base md:text-lg text-gray-400">{stat.label}</div>
+                </motion.div>
+              ))}
             </div>
           </motion.div>
         </section>
 
         {/* Live Leaderboard Preview */}
-        <section className="container mx-auto px-4 py-20 lg:py-32">
+        <section className="container mx-auto px-6 py-20 lg:py-32 bg-gradient-to-b from-dark-100/30 via-transparent to-dark-100/30">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h3 className="text-4xl md:text-5xl font-display font-bold mb-4">
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-yellow-500/20 text-yellow-400 text-base font-semibold border-2 border-yellow-500/30 mb-6">
+              <Trophy className="h-5 w-5" />
+              Top Performers
+            </div>
+            <h3 className="text-5xl md:text-6xl font-display font-bold mb-6">
               Top Farmers 🏆
             </h3>
-            <p className="text-xl text-gray-400">
-              Compete with players worldwide
+            <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+              Compete with <span className="text-secondary font-bold">players worldwide</span> and climb to the top!
             </p>
           </motion.div>
 
-          <div className="max-w-3xl mx-auto">
-            <div className="glass rounded-xl overflow-hidden border border-white/10">
-              <div className="bg-gradient-to-r from-primary/20 to-secondary/20 p-6 border-b border-white/10">
+          <div className="max-w-4xl mx-auto">
+            <div className="glass rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl">
+              <div className="bg-gradient-to-r from-primary/30 via-secondary/20 to-purple-500/20 p-6 md:p-8 border-b-2 border-white/10">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xl font-bold flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-primary" />
+                  <h4 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-primary/30 flex items-center justify-center">
+                      <Trophy className="h-7 w-7 text-primary" />
+                    </div>
                     Global Leaderboard
                   </h4>
-                  <span className="text-sm text-gray-400">Live</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-base md:text-lg text-green-400 font-semibold">Live</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="divide-y divide-white/5">
+              <div className="divide-y-2 divide-white/5 p-4">
                 {topPlayers.map((player, idx) => (
                   <motion.div
                     key={player.rank}
-                    initial={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, x: -30 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: idx * 0.1 }}
-                    className="p-4 hover:bg-white/5 transition-colors"
+                    className={`p-4 md:p-6 rounded-xl hover:bg-white/5 transition-all duration-300 ${
+                      player.rank <= 3 ? 'bg-gradient-to-r from-primary/5 to-secondary/5' : ''
+                    }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        {/* Rank Badge */}
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${getRankBadgeClass(player.rank)}`}
-                        >
-                          #{player.rank}
+                      <div className="flex items-center gap-4 md:gap-6">
+                        {/* Rank Badge with Trophy Podium */}
+                        <div className="relative">
+                          <div
+                            className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center font-bold text-xl md:text-2xl shadow-lg ${getRankBadgeClass(player.rank)} transition-transform hover:scale-110`}
+                          >
+                            {player.rank <= 3 ? (
+                              <span className="text-3xl md:text-4xl">
+                                {player.rank === 1 && '🥇'}
+                                {player.rank === 2 && '🥈'}
+                                {player.rank === 3 && '🥉'}
+                              </span>
+                            ) : (
+                              `#${player.rank}`
+                            )}
+                          </div>
+                          {player.rank === 1 && (
+                            <div className="absolute -top-2 -right-2 text-2xl animate-bounce">👑</div>
+                          )}
                         </div>
 
                         {/* Avatar & Name */}
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{player.avatar}</span>
-                          <span className="font-semibold text-white">{player.name}</span>
+                        <div className="flex items-center gap-3 md:gap-4">
+                          <span className="text-3xl md:text-4xl">{player.avatar}</span>
+                          <div>
+                            <span className="font-bold text-lg md:text-xl text-white block">{player.name}</span>
+                            {player.rank <= 3 && (
+                              <span className="text-sm text-primary font-semibold">Elite Farmer</span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
                       {/* Oranges */}
                       <div className="text-right">
-                        <div className="text-lg font-bold text-primary">
-                          {player.oranges.toLocaleString()} 🍊
+                        <div className="text-xl md:text-3xl font-bold text-gradient flex items-center gap-2">
+                          {player.oranges.toLocaleString()}
+                          <span className="text-2xl md:text-4xl">🍊</span>
                         </div>
+                        <div className="text-sm text-gray-400 mt-1">oranges harvested</div>
                       </div>
                     </div>
                   </motion.div>
                 ))}
               </div>
 
-              <div className="p-4 bg-dark-100/50 text-center">
+              <div className="p-6 bg-dark-100/50 border-t-2 border-white/10 text-center">
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="lg"
                   icon={<ExternalLink />}
                   onClick={() => navigate('/leaderboard')}
+                  className="text-base md:text-lg"
                 >
                   View Full Leaderboard
                 </Button>
@@ -501,46 +611,53 @@ export default function LandingPage() {
         </section>
 
         {/* Community Section */}
-        <section className="container mx-auto px-4 py-20 lg:py-32 bg-gradient-to-b from-transparent via-dark-100/30 to-transparent">
+        <section className="container mx-auto px-6 py-20 lg:py-32">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h3 className="text-4xl md:text-5xl font-display font-bold mb-4">
-              Join Our Community
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-purple-500/20 text-purple-400 text-base font-semibold border-2 border-purple-500/30 mb-6">
+              <Users className="h-5 w-5" />
+              Community
+            </div>
+            <h3 className="text-5xl md:text-6xl font-display font-bold mb-6">
+              Join Our Farming Family 👨‍🌾
             </h3>
-            <p className="text-xl text-gray-400">
-              Connect with thousands of farmers worldwide
+            <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+              Connect with <span className="text-primary font-bold">thousands of farmers</span> worldwide
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {[
               {
                 icon: MessageCircle,
                 title: 'Twitter',
-                description: 'Follow for updates',
+                description: 'Follow for daily updates and farming tips',
                 link: 'https://twitter.com/orangefarm',
                 color: 'from-blue-500/20 to-blue-600/20',
                 borderColor: 'border-blue-500/30',
+                emoji: '🐦',
               },
               {
-                icon: MessageCircle,
+                icon: Users,
                 title: 'Discord',
-                description: 'Join the conversation',
+                description: 'Join the conversation and meet farmers',
                 link: 'https://discord.gg/orangefarm',
                 color: 'from-purple-500/20 to-purple-600/20',
                 borderColor: 'border-purple-500/30',
+                emoji: '💬',
               },
               {
                 icon: ExternalLink,
                 title: 'GitHub',
-                description: 'View source code',
+                description: 'View source code and contribute',
                 link: 'https://github.com/orangefarm',
                 color: 'from-gray-500/20 to-gray-600/20',
                 borderColor: 'border-gray-500/30',
+                emoji: '💻',
               },
             ].map((social, idx) => (
               <motion.a
@@ -553,69 +670,94 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
                 whileHover={{ y: -10, scale: 1.05 }}
-                className={`glass rounded-xl p-8 text-center border ${social.borderColor} hover:border-primary/50 transition-all duration-300 group`}
+                className={`glass rounded-2xl p-8 md:p-10 text-center border-2 ${social.borderColor} hover:border-primary/50 transition-all duration-300 group shadow-lg`}
               >
-                <div
-                  className={`inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br ${social.color} mb-4 group-hover:scale-110 transition-transform`}
-                >
-                  <social.icon className="h-8 w-8 text-white" />
+                <div className="relative inline-block mb-6">
+                  <div
+                    className={`flex items-center justify-center w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br ${social.color} group-hover:scale-110 transition-transform shadow-lg`}
+                  >
+                    <social.icon className="h-10 w-10 md:h-12 md:w-12 text-white" />
+                  </div>
+                  <span className="absolute -top-2 -right-2 text-3xl md:text-4xl">{social.emoji}</span>
                 </div>
-                <h4 className="text-xl font-semibold mb-2 text-white">{social.title}</h4>
-                <p className="text-gray-400">{social.description}</p>
+                <h4 className="text-2xl md:text-3xl font-bold mb-3 text-white">{social.title}</h4>
+                <p className="text-base md:text-lg text-gray-400 leading-relaxed">{social.description}</p>
               </motion.a>
             ))}
           </div>
         </section>
 
-        {/* Final CTA */}
-        <section className="container mx-auto px-4 py-20 lg:py-32 text-center">
+        {/* Final CTA - Call to Action */}
+        <section className="container mx-auto px-6 py-20 lg:py-32 text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="max-w-3xl mx-auto glass rounded-2xl p-12 border border-primary/30"
+            className="relative max-w-5xl mx-auto"
           >
-            <h3 className="text-4xl md:text-5xl font-display font-bold mb-4 text-gradient">
-              Ready to Start Farming?
-            </h3>
-            <p className="text-xl text-gray-300 mb-8">
-              Join thousands of players earning real yield through blockchain gaming
-            </p>
+            {/* Background Glow */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/20 to-purple-500/20 rounded-3xl blur-3xl" />
+            
+            {/* CTA Card */}
+            <div className="relative glass rounded-3xl p-10 md:p-16 border-2 border-primary/30 shadow-2xl">
+              {/* Orange Decorations */}
+              <div className="absolute -top-6 -left-6 text-6xl md:text-7xl animate-bounce">🍊</div>
+              <div className="absolute -top-6 -right-6 text-6xl md:text-7xl animate-bounce" style={{ animationDelay: '0.5s' }}>🍊</div>
+              
+              <h3 className="text-5xl md:text-6xl lg:text-7xl font-display font-bold mb-6 text-gradient">
+                Ready to Start Farming?
+              </h3>
+              <p className="text-xl md:text-2xl lg:text-3xl text-gray-300 mb-10 max-w-3xl mx-auto leading-relaxed">
+                Join thousands of players earning <span className="text-primary font-bold">real $ORANGE tokens</span> through blockchain gaming
+              </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button
-                onClick={handleGetStarted}
-                size="lg"
-                variant="primary"
-                icon={<Rocket />}
-              >
-                {isConnected ? 'Launch App' : 'Start Farming Now'}
-              </Button>
-              {!isConnected && (
-                <ConnectButton.Custom>
-                  {({ openConnectModal }) => (
-                    <Button
-                      onClick={openConnectModal}
-                      size="lg"
-                      variant="outline"
-                      icon={<Rocket />}
-                    >
-                      Or Connect Wallet First
-                    </Button>
-                  )}
-                </ConnectButton.Custom>
-              )}
-            </div>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-12">
+                <Button
+                  onClick={handleGetStarted}
+                  size="lg"
+                  variant="primary"
+                  icon={<Rocket />}
+                  className="text-xl px-10 py-6 shadow-lg shadow-primary/50"
+                >
+                  {isConnected ? '🚀 Launch App' : '🌱 Start Farming Now'}
+                </Button>
+                {!isConnected && (
+                  <ConnectButton.Custom>
+                    {({ openConnectModal }) => (
+                      <Button
+                        onClick={openConnectModal}
+                        size="lg"
+                        variant="outline"
+                        icon={<Shield />}
+                        className="text-xl px-10 py-6"
+                      >
+                        Connect Wallet First
+                      </Button>
+                    )}
+                  </ConnectButton.Custom>
+                )}
+              </div>
 
-            <div className="mt-8 flex items-center justify-center gap-6 text-sm text-gray-400">
-              <span className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-green-400" />
-                Audited Smart Contracts
-              </span>
-              <span className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-400" />
-                1000+ Active Players
-              </span>
+              <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10 text-base md:text-lg">
+                <span className="flex items-center gap-2 text-gray-300">
+                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-green-400" />
+                  </div>
+                  <span>Audited Contracts</span>
+                </span>
+                <span className="flex items-center gap-2 text-gray-300">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                    <Users className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <span>10K+ Active Farmers</span>
+                </span>
+                <span className="flex items-center gap-2 text-gray-300">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Zap className="h-5 w-5 text-primary" />
+                  </div>
+                  <span>Zero Gas Fees</span>
+                </span>
+              </div>
             </div>
           </motion.div>
         </section>
@@ -626,29 +768,30 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 py-12">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             {/* About */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-3xl">🍊</span>
-                <h4 className="text-xl font-display font-bold text-white">Orange Farm</h4>
+            <div className="lg:col-span-2">
+              <div className="flex items-center gap-3 mb-6">
+                <img src={logo} alt="Orange Farm" className="h-14 w-14 md:h-16 md:w-16 object-contain" />
+                <h4 className="text-2xl md:text-3xl font-display font-bold text-white">Orange Farm</h4>
               </div>
-              <p className="text-gray-400 text-sm mb-4">
-                The first fully on-chain farming game on Somnia Network with AI-powered
-                automation and real yield farming.
+              <p className="text-base md:text-lg text-gray-400 mb-6 max-w-md leading-relaxed">
+                The first fully on-chain farming game on <span className="text-primary font-semibold">Somnia Network</span> with AI-powered
+                automation and <span className="text-secondary font-semibold">real yield farming</span>.
               </p>
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 {[
-                  { icon: MessageCircle, link: 'https://twitter.com' },
-                  { icon: MessageCircle, link: 'https://discord.gg' },
-                  { icon: ExternalLink, link: 'https://github.com' },
+                  { icon: MessageCircle, link: 'https://twitter.com', label: 'Twitter', color: 'hover:bg-blue-500' },
+                  { icon: Users, link: 'https://discord.gg', label: 'Discord', color: 'hover:bg-purple-500' },
+                  { icon: ExternalLink, link: 'https://github.com', label: 'GitHub', color: 'hover:bg-gray-500' },
                 ].map((social) => (
                   <a
                     key={social.link}
                     href={social.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-10 h-10 rounded-full bg-dark-100 flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
+                    aria-label={social.label}
+                    className={`w-12 h-12 md:w-14 md:h-14 rounded-xl bg-dark-100 flex items-center justify-center ${social.color} hover:text-white transition-all duration-300 hover:scale-110 shadow-lg`}
                   >
-                    <social.icon className="h-5 w-5" />
+                    <social.icon className="h-6 w-6 md:h-7 md:w-7" />
                   </a>
                 ))}
               </div>
@@ -656,22 +799,26 @@ export default function LandingPage() {
 
             {/* Resources */}
             <div>
-              <h5 className="font-semibold text-white mb-4">Resources</h5>
-              <ul className="space-y-2 text-sm">
+              <h5 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <Sprout className="h-5 w-5 text-primary" />
+                Resources
+              </h5>
+              <ul className="space-y-3 text-base">
                 {[
-                  { label: 'Documentation', href: '/docs' },
-                  { label: 'Whitepaper', href: '/whitepaper.pdf' },
-                  { label: 'Smart Contracts', href: 'https://github.com' },
-                  { label: 'Audit Report', href: '/audit.pdf' },
-                  { label: 'Brand Kit', href: '/brand-kit' },
+                  { label: 'Documentation', href: '/docs', emoji: '📚' },
+                  { label: 'Whitepaper', href: '/whitepaper.pdf', emoji: '📄' },
+                  { label: 'Smart Contracts', href: 'https://github.com', emoji: '📜' },
+                  { label: 'Audit Report', href: '/audit.pdf', emoji: '🔒' },
+                  { label: 'Brand Kit', href: '/brand-kit', emoji: '🎨' },
                 ].map((link) => (
                   <li key={link.label}>
                     <a
                       href={link.href}
-                      className="text-gray-400 hover:text-primary transition-colors inline-flex items-center gap-1"
+                      className="text-gray-400 hover:text-primary transition-colors inline-flex items-center gap-2 group"
                     >
-                      {link.label}
-                      <ExternalLink className="h-3 w-3" />
+                      <span>{link.emoji}</span>
+                      <span className="group-hover:translate-x-1 transition-transform">{link.label}</span>
+                      <ExternalLink className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </a>
                   </li>
                 ))}
@@ -680,23 +827,27 @@ export default function LandingPage() {
 
             {/* Community */}
             <div>
-              <h5 className="font-semibold text-white mb-4">Community</h5>
-              <ul className="space-y-2 text-sm">
+              <h5 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <Users className="h-5 w-5 text-secondary" />
+                Community
+              </h5>
+              <ul className="space-y-3 text-base">
                 {[
-                  { label: 'Twitter', href: 'https://twitter.com' },
-                  { label: 'Discord', href: 'https://discord.gg' },
-                  { label: 'Telegram', href: 'https://t.me' },
-                  { label: 'Medium', href: 'https://medium.com' },
-                  { label: 'YouTube', href: 'https://youtube.com' },
+                  { label: 'Twitter', href: 'https://twitter.com', emoji: '🐦' },
+                  { label: 'Discord', href: 'https://discord.gg', emoji: '💬' },
+                  { label: 'Telegram', href: 'https://t.me', emoji: '✈️' },
+                  { label: 'Medium', href: 'https://medium.com', emoji: '✍️' },
+                  { label: 'YouTube', href: 'https://youtube.com', emoji: '📺' },
                 ].map((link) => (
                   <li key={link.label}>
                     <a
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-primary transition-colors"
+                      className="text-gray-400 hover:text-primary transition-colors inline-flex items-center gap-2 group"
                     >
-                      {link.label}
+                      <span>{link.emoji}</span>
+                      <span className="group-hover:translate-x-1 transition-transform">{link.label}</span>
                     </a>
                   </li>
                 ))}
@@ -705,21 +856,24 @@ export default function LandingPage() {
 
             {/* Legal */}
             <div>
-              <h5 className="font-semibold text-white mb-4">Legal</h5>
-              <ul className="space-y-2 text-sm">
+              <h5 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <Shield className="h-5 w-5 text-green-400" />
+                Legal
+              </h5>
+              <ul className="space-y-3 text-base">
                 {[
-                  { label: 'Terms of Service', href: '/terms' },
-                  { label: 'Privacy Policy', href: '/privacy' },
-                  { label: 'Cookie Policy', href: '/cookies' },
-                  { label: 'Disclaimer', href: '/disclaimer' },
-                  { label: 'Contact Us', href: '/contact' },
+                  { label: 'Privacy Policy', href: '/privacy', emoji: '🔒' },
+                  { label: 'Terms of Service', href: '/terms', emoji: '📋' },
+                  { label: 'Cookie Policy', href: '/cookies', emoji: '🍪' },
+                  { label: 'Disclaimer', href: '/disclaimer', emoji: '⚠️' },
                 ].map((link) => (
                   <li key={link.label}>
                     <a
                       href={link.href}
-                      className="text-gray-400 hover:text-primary transition-colors"
+                      className="text-gray-400 hover:text-primary transition-colors inline-flex items-center gap-2 group"
                     >
-                      {link.label}
+                      <span>{link.emoji}</span>
+                      <span className="group-hover:translate-x-1 transition-transform">{link.label}</span>
                     </a>
                   </li>
                 ))}
@@ -728,18 +882,41 @@ export default function LandingPage() {
           </div>
 
           {/* Bottom Bar */}
-          <div className="border-t border-dark-100 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-400">
-            <p>© 2025 Orange Farm. All rights reserved. Built on Somnia Network.</p>
-            <div className="flex items-center gap-6">
-              <a
-                href="https://somnia.network"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-primary transition-colors flex items-center gap-1"
-              >
-                Powered by Somnia
-                <ExternalLink className="h-3 w-3" />
-              </a>
+          <div className="border-t-2 border-white/10 pt-10 mt-12">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="text-center md:text-left">
+                <p className="text-base md:text-lg text-gray-400 mb-2">
+                  © 2025 <span className="text-primary font-bold">Orange Farm</span>. All rights reserved.
+                </p>
+                <p className="text-sm text-gray-500 flex items-center gap-2 justify-center md:justify-start">
+                  Built with <span className="text-red-500 animate-pulse">❤️</span> on{' '}
+                  <a 
+                    href="https://somnia.network" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-secondary hover:text-primary transition-colors font-semibold inline-flex items-center gap-1"
+                  >
+                    Somnia Network
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/30">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-sm text-green-400 font-semibold">Network Active</span>
+                </div>
+                <a
+                  href="https://somnia.network"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 transition-all duration-300 text-sm font-semibold text-primary flex items-center gap-2"
+                >
+                  <Zap className="h-4 w-4" />
+                  Powered by Somnia
+                </a>
+              </div>
             </div>
           </div>
         </div>

@@ -692,3 +692,167 @@ export function useAssignedBots(landId: bigint | undefined) {
     refetch,
   }
 }
+
+// ============================================================================
+// Marketplace Hooks
+// ============================================================================
+
+/**
+ * Hook to get land prices from marketplace
+ */
+export function useLandPrices() {
+  const { data: smallPrice } = useReadContract({
+    address: CONTRACTS.marketplace,
+    abi: ABIS.marketplace,
+    functionName: 'landPrices',
+    args: [0], // Small
+  })
+
+  const { data: mediumPrice } = useReadContract({
+    address: CONTRACTS.marketplace,
+    abi: ABIS.marketplace,
+    functionName: 'landPrices',
+    args: [1], // Medium
+  })
+
+  const { data: largePrice } = useReadContract({
+    address: CONTRACTS.marketplace,
+    abi: ABIS.marketplace,
+    functionName: 'landPrices',
+    args: [2], // Large
+  })
+
+  return {
+    small: smallPrice as bigint,
+    medium: mediumPrice as bigint,
+    large: largePrice as bigint,
+  }
+}
+
+/**
+ * Hook to get bot prices from marketplace
+ */
+export function useBotPrices() {
+  const { data: basicPrice } = useReadContract({
+    address: CONTRACTS.marketplace,
+    abi: ABIS.marketplace,
+    functionName: 'botPrices',
+    args: [0], // Basic
+  })
+
+  const { data: advancedPrice } = useReadContract({
+    address: CONTRACTS.marketplace,
+    abi: ABIS.marketplace,
+    functionName: 'botPrices',
+    args: [1], // Advanced
+  })
+
+  const { data: elitePrice } = useReadContract({
+    address: CONTRACTS.marketplace,
+    abi: ABIS.marketplace,
+    functionName: 'botPrices',
+    args: [2], // Elite
+  })
+
+  return {
+    basic: basicPrice as bigint,
+    advanced: advancedPrice as bigint,
+    elite: elitePrice as bigint,
+  }
+}
+
+/**
+ * Hook to get water prices from marketplace
+ */
+export function useWaterPrices() {
+  const { data: pack10Price } = useReadContract({
+    address: CONTRACTS.marketplace,
+    abi: ABIS.marketplace,
+    functionName: 'waterPrices',
+    args: [0], // Pack10
+  })
+
+  const { data: barrel50Price } = useReadContract({
+    address: CONTRACTS.marketplace,
+    abi: ABIS.marketplace,
+    functionName: 'waterPrices',
+    args: [1], // Barrel50
+  })
+
+  return {
+    pack10: pack10Price as bigint,
+    barrel50: barrel50Price as bigint,
+  }
+}
+
+/**
+ * Hook to buy land from marketplace
+ */
+export function useBuyLand() {
+  const { writeContract, data: hash, isPending, isSuccess, error } = useWriteContract()
+
+  const buyLand = (landType: 0 | 1 | 2) => {
+    writeContract({
+      address: CONTRACTS.marketplace,
+      abi: ABIS.marketplace,
+      functionName: 'buyLand',
+      args: [landType],
+    })
+  }
+
+  return {
+    buyLand,
+    hash,
+    isPending,
+    isSuccess,
+    error,
+  }
+}
+
+/**
+ * Hook to buy bot from marketplace
+ */
+export function useBuyBot() {
+  const { writeContract, data: hash, isPending, isSuccess, error } = useWriteContract()
+
+  const buyBot = (botType: 0 | 1 | 2) => {
+    writeContract({
+      address: CONTRACTS.marketplace,
+      abi: ABIS.marketplace,
+      functionName: 'buyBot',
+      args: [botType],
+    })
+  }
+
+  return {
+    buyBot,
+    hash,
+    isPending,
+    isSuccess,
+    error,
+  }
+}
+
+/**
+ * Hook to buy water from marketplace
+ */
+export function useBuyWater() {
+  const { writeContract, data: hash, isPending, isSuccess, error } = useWriteContract()
+
+  const buyWater = (waterPackage: 0 | 1) => {
+    writeContract({
+      address: CONTRACTS.marketplace,
+      abi: ABIS.marketplace,
+      functionName: 'buyWater',
+      args: [waterPackage],
+    })
+  }
+
+  return {
+    buyWater,
+    hash,
+    isPending,
+    isSuccess,
+    error,
+  }
+}
