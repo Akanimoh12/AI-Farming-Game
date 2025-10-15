@@ -10,6 +10,10 @@ interface IGameRegistrySettlement {
     function isRegistered(address player) external view returns (bool);
 }
 
+interface IMockOrangeToken {
+    function mint(address to, uint256 amount) external;
+}
+
 /**
  * @title HarvestSettlement
  * @notice Simplified harvest settlement for MVP - direct commitment without complex validation
@@ -29,6 +33,7 @@ contract HarvestSettlement is AccessControl, Pausable, ReentrancyGuard {
 
     // State variables
     address public gameRegistry;
+    address public mockOrangeToken;
     
     // Player harvest tracking
     mapping(address => HarvestRecord) public playerHarvests;
@@ -63,19 +68,23 @@ contract HarvestSettlement is AccessControl, Pausable, ReentrancyGuard {
      * @notice Constructor - initializes the settlement contract
      * @param admin Address of the admin
      * @param _gameRegistry Address of GameRegistry contract
+     * @param _mockOrangeToken Address of MockOrangeToken contract
      */
     constructor(
         address admin,
-        address _gameRegistry
+        address _gameRegistry,
+        address _mockOrangeToken
     ) {
         require(admin != address(0), "HarvestSettlement: admin is zero address");
         require(_gameRegistry != address(0), "HarvestSettlement: gameRegistry is zero address");
+        require(_mockOrangeToken != address(0), "HarvestSettlement: mockOrangeToken is zero address");
 
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(PAUSER_ROLE, admin);
         _grantRole(SETTLER_ROLE, admin);
 
         gameRegistry = _gameRegistry;
+        mockOrangeToken = _mockOrangeToken;
         commitCooldown = 60; // 1 minute cooldown
         maxHarvestPerCommit = 1000 ether; // 1000 oranges max per commit
     }
@@ -114,6 +123,9 @@ contract HarvestSettlement is AccessControl, Pausable, ReentrancyGuard {
         // Update global stats
         totalCommits++;
         totalOrangesSettled += orangeAmount;
+
+        // 🎯 MINT ORANGE TOKENS TO PLAYER
+        IMockOrangeToken(mockOrangeToken).mint(player, orangeAmount);
 
         // Commit to GameRegistry
         IGameRegistrySettlement(gameRegistry).commitHarvest(player, orangeAmount);
@@ -166,6 +178,9 @@ contract HarvestSettlement is AccessControl, Pausable, ReentrancyGuard {
             lastCommitTime[player] = block.timestamp;
             batchTotal += amount;
 
+            // 🎯 MINT ORANGE TOKENS TO PLAYER
+            IMockOrangeToken(mockOrangeToken).mint(player, amount);
+
             // Commit to GameRegistry
             IGameRegistrySettlement(gameRegistry).commitHarvest(player, amount);
         }
@@ -212,6 +227,9 @@ contract HarvestSettlement is AccessControl, Pausable, ReentrancyGuard {
         // Update global stats
         totalCommits++;
         totalOrangesSettled += orangeAmount;
+
+        // 🎯 MINT ORANGE TOKENS TO PLAYER
+        IMockOrangeToken(mockOrangeToken).mint(msg.sender, orangeAmount);
 
         // Commit to GameRegistry
         IGameRegistrySettlement(gameRegistry).commitHarvest(msg.sender, orangeAmount);
@@ -278,14 +296,14 @@ contract HarvestSettlement is AccessControl, Pausable, ReentrancyGuard {
             uint256 totalOranges,
             uint256 totalHarvests,
             uint256 lastCommit,
-            bool canCommit
+            bool canCommitNow
         ) 
     {
         HarvestRecord memory record = playerHarvests[player];
         totalOranges = record.totalOranges;
         totalHarvests = record.totalHarvests;
         lastCommit = record.lastCommitTime;
-        canCommit = block.timestamp >= lastCommitTime[player] + commitCooldown;
+        canCommitNow = block.timestamp >= lastCommitTime[player] + commitCooldown;
     }
 
     /**

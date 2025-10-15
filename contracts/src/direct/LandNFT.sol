@@ -119,12 +119,17 @@ contract LandNFT is ERC721, ERC721URIStorage, AccessControl, Pausable {
     }
 
     /**
-     * @notice Add bot to land (called by game contracts)
+     * @notice Add bot to land (called by owner or game contracts)
      * @param tokenId Land token ID
      * @param botId Bot token ID to assign
      */
-    function addBotToLand(uint256 tokenId, uint256 botId) external onlyRole(MINTER_ROLE) {
-        require(_ownerOf(tokenId) != address(0), "LandNFT: land doesn't exist");
+    function addBotToLand(uint256 tokenId, uint256 botId) external {
+        address owner = _ownerOf(tokenId);
+        require(owner != address(0), "LandNFT: land doesn't exist");
+        require(
+            msg.sender == owner || hasRole(MINTER_ROLE, msg.sender),
+            "LandNFT: not authorized"
+        );
         require(
             _landAssignedBots[tokenId].length < landData[tokenId].capacity,
             "LandNFT: land at capacity"
@@ -134,11 +139,18 @@ contract LandNFT is ERC721, ERC721URIStorage, AccessControl, Pausable {
     }
 
     /**
-     * @notice Remove bot from land
+     * @notice Remove bot from land (called by owner or game contracts)
      * @param tokenId Land token ID
      * @param botId Bot token ID to remove
      */
-    function removeBotFromLand(uint256 tokenId, uint256 botId) external onlyRole(MINTER_ROLE) {
+    function removeBotFromLand(uint256 tokenId, uint256 botId) external {
+        address owner = _ownerOf(tokenId);
+        require(owner != address(0), "LandNFT: land doesn't exist");
+        require(
+            msg.sender == owner || hasRole(MINTER_ROLE, msg.sender),
+            "LandNFT: not authorized"
+        );
+        
         uint256[] storage bots = _landAssignedBots[tokenId];
         
         for (uint256 i = 0; i < bots.length; i++) {

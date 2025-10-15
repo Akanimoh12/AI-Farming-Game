@@ -9,6 +9,7 @@ import {
   useReferralData,
   formatTokenAmount 
 } from '@hooks/useContracts'
+import DailyRewards from '@components/DailyRewards'
 
 export default function DashboardPage() {
   const { address, isConnected } = useAccount()
@@ -133,6 +134,11 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Daily Rewards Section - Only show if registered */}
+      {isConnected && isRegistered && (
+        <DailyRewards />
+      )}
 
       {/* Stats Grid */}
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">

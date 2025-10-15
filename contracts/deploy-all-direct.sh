@@ -131,7 +131,7 @@ wait_for_tx
 # 8. Deploy HarvestSettlement
 echo -e "${CYAN}═══ 8/8 HarvestSettlement ═══${NC}"
 SETTLEMENT_BYTECODE=$(cat out/direct/HarvestSettlement.sol/HarvestSettlement.json | jq -r '.bytecode.object')
-SETTLEMENT_ARGS=$($CAST abi-encode "constructor(address,address)" $ADMIN $REGISTRY)
+SETTLEMENT_ARGS=$($CAST abi-encode "constructor(address,address,address)" $ADMIN $REGISTRY $MOCK_ORANGE)
 HARVEST_SETTLEMENT=$($CAST send \
     --rpc-url $SOMNIA_RPC \
     --private-key $PRIVATE_KEY \
@@ -140,6 +140,7 @@ HARVEST_SETTLEMENT=$($CAST send \
     --create ${SETTLEMENT_BYTECODE}${SETTLEMENT_ARGS:2} \
     | jq -r '.contractAddress')
 echo -e "${GREEN}   ✅ HarvestSettlement: ${HARVEST_SETTLEMENT}${NC}"
+echo -e "${YELLOW}   ⚠️  IMPORTANT: Now mints ORANGE tokens on harvest!${NC}"
 echo ""
 
 # Grant roles
@@ -166,7 +167,12 @@ echo -e "${GREEN}   ✅ Marketplace can mint all assets${NC}"
 
 echo -e "${CYAN}Granting MINTER_ROLE to RealTimeHarvest...${NC}"
 $CAST send $BOT "grantRole(bytes32,address)" $MINTER_ROLE $REAL_TIME_HARVEST --rpc-url $SOMNIA_RPC --private-key $PRIVATE_KEY --legacy > /dev/null 2>&1
-echo -e "${GREEN}   ✅ RealTimeHarvest can update bots${NC}"
+$CAST send $LAND "grantRole(bytes32,address)" $MINTER_ROLE $REAL_TIME_HARVEST --rpc-url $SOMNIA_RPC --private-key $PRIVATE_KEY --legacy > /dev/null 2>&1
+echo -e "${GREEN}   ✅ RealTimeHarvest can update bots and land${NC}"
+
+echo -e "${CYAN}Granting MINTER_ROLE to HarvestSettlement...${NC}"
+$CAST send $MOCK_ORANGE "grantRole(bytes32,address)" $MINTER_ROLE $HARVEST_SETTLEMENT --rpc-url $SOMNIA_RPC --private-key $PRIVATE_KEY --legacy > /dev/null 2>&1
+echo -e "${GREEN}   ✅ HarvestSettlement can mint ORANGE tokens (CRITICAL!)${NC}"
 
 echo ""
 echo -e "${GREEN}════════════════════════════════════════${NC}"

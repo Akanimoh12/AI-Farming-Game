@@ -12,23 +12,38 @@ import {
   AlertCircle,
   TrendingUp,
   Zap,
+  X,
+  Settings,
 } from 'lucide-react'
 import {
   useIsRegistered,
   useUserLands,
   useUserBots,
   useLandInfo,
+  useAssignedBots,
   usePendingHarvest,
   useStartHarvest,
   useCompleteHarvest,
-  useAssignedBots,
+  useTimeRemaining,
+  useCancelHarvest,
+  useWatchHarvestStarted,
+  useWatchHarvestCompleted,
   formatTokenAmount,
-} from '@hooks/useContracts'
+} from '../hooks/useContracts'
+import {
+  CountdownTimer,
+  HarvestProgressBar,
+  LandMultiplierBadge,
+  HarvestCalculator,
+} from '../components/harvest'
+import BotAssignmentModal from '../components/BotAssignmentModal'
+import { toast } from 'sonner'
 
 export default function FarmPage() {
-  const { isConnected } = useAccount()
+  const { isConnected, address } = useAccount()
   const navigate = useNavigate()
   const [selectedLand, setSelectedLand] = useState<bigint | undefined>()
+  const [showBotModal, setShowBotModal] = useState(false)
   
   // Check registration
   const { isRegistered, isLoading: isCheckingRegistration } = useIsRegistered()
@@ -36,6 +51,22 @@ export default function FarmPage() {
   // Get user's lands and bots
   const { landIds, isLoading: isLoadingLands, refetch: refetchLands } = useUserLands()
   const { botIds, isLoading: isLoadingBots } = useUserBots()
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 Farm Debug:', {
+      isConnected,
+      address,
+      isRegistered,
+      isCheckingRegistration,
+      landIds,
+      landIdsLength: landIds?.length,
+      isLoadingLands,
+      botIds,
+      botIdsLength: botIds?.length,
+      isLoadingBots
+    })
+  }, [isConnected, address, isRegistered, isCheckingRegistration, landIds, isLoadingLands, botIds, isLoadingBots])
   
   // Selected land info
   const { 
@@ -48,10 +79,15 @@ export default function FarmPage() {
   // Pending harvest for selected land
   const { 
     amount, 
+    readyAt,
     isReady,
+    isActive,
     isLoading: isLoadingPendingHarvest,
     refetch: refetchPendingHarvest 
   } = usePendingHarvest(selectedLand)
+  
+  // Time remaining for active harvest
+  const { timeRemaining } = useTimeRemaining(selectedLand)
   
   // Assigned bots for selected land
   const { 
@@ -74,6 +110,13 @@ export default function FarmPage() {
     error: completeHarvestError 
   } = useCompleteHarvest()
   
+  const {
+    cancelHarvest,
+    hash: cancelHarvestHash,
+    isPending: isCancellingHarvest,
+    error: cancelHarvestError
+  } = useCancelHarvest()
+  
   // Wait for transaction receipts
   const { isLoading: isWaitingStartHarvest, isSuccess: startHarvestSuccess } = 
     useWaitForTransactionReceipt({ hash: startHarvestHash })
@@ -81,7 +124,32 @@ export default function FarmPage() {
   const { isLoading: isWaitingCompleteHarvest, isSuccess: completeHarvestSuccess } = 
     useWaitForTransactionReceipt({ hash: completeHarvestHash })
   
-  const landInfo = owner ? { owner, landType, capacity, isHarvesting: !isReady, lastHarvestTime: 0n } : null
+  const { isLoading: isWaitingCancelHarvest, isSuccess: cancelHarvestSuccess } = 
+    useWaitForTransactionReceipt({ hash: cancelHarvestHash })
+  
+  const landInfo = owner ? { owner, landType, capacity, isHarvesting: isActive, lastHarvestTime: readyAt } : null
+  
+  // Watch for harvest events
+  useWatchHarvestStarted((landId, _botId, estimatedAmount) => {
+    if (landId === selectedLand) {
+      toast.success(`Harvest started! Expected yield: ${formatTokenAmount(estimatedAmount)} $ORANGE`, {
+        icon: '🌱',
+        duration: 4000,
+      })
+      refetchPendingHarvest()
+    }
+  })
+  
+  useWatchHarvestCompleted((landId, _player, harvestedAmount) => {
+    if (landId === selectedLand) {
+      toast.success(`Harvest completed! You earned ${formatTokenAmount(harvestedAmount)} $ORANGE! 🎉`, {
+        icon: '🍊',
+        duration: 5000,
+      })
+      refetchPendingHarvest()
+      refetchLands()
+    }
+  })
   
   // Auto-select first land
   useEffect(() => {
@@ -92,11 +160,21 @@ export default function FarmPage() {
   
   // Refetch data after successful transactions
   useEffect(() => {
-    if (startHarvestSuccess || completeHarvestSuccess) {
+    if (startHarvestSuccess || completeHarvestSuccess || cancelHarvestSuccess) {
       refetchLands()
       refetchPendingHarvest()
     }
-  }, [startHarvestSuccess, completeHarvestSuccess, refetchLands, refetchPendingHarvest])
+  }, [startHarvestSuccess, completeHarvestSuccess, cancelHarvestSuccess, refetchLands, refetchPendingHarvest])
+  
+  // Show notification when harvest becomes ready
+  useEffect(() => {
+    if (isReady && isActive && selectedLand) {
+      toast('🎉 Harvest is ready to collect!', {
+        icon: '✨',
+        duration: 6000,
+      })
+    }
+  }, [isReady, isActive, selectedLand])
   
   // Auto-refresh pending harvest every 5 seconds
   useEffect(() => {
@@ -122,14 +200,14 @@ export default function FarmPage() {
     completeHarvest(selectedLand)
   }
   
-  // Get land type name
-  const getLandTypeName = (type: number | undefined) => {
-    if (type === 0) return 'Basic'
-    if (type === 1) return 'Premium'
-    if (type === 2) return 'Legendary'
-    return 'Unknown'
+  // Handle cancel harvest
+  const handleCancelHarvest = () => {
+    if (!selectedLand) return
+    if (confirm('Are you sure you want to cancel this harvest? You will lose the progress.')) {
+      cancelHarvest(selectedLand)
+    }
   }
-
+  
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -262,12 +340,8 @@ export default function FarmPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <div className="glass rounded-xl p-4">
-                        <p className="text-sm text-gray-400 mb-2">Land Type</p>
-                        <p className="text-xl font-bold text-green-400">
-                          {getLandTypeName(landType)}
-                        </p>
-                      </div>
+                      {/* Land Type with Multiplier Badge */}
+                      <LandMultiplierBadge landType={landType || 0} />
                       
                       <div className="glass rounded-xl p-4">
                         <p className="text-sm text-gray-400 mb-2">Status</p>
@@ -278,8 +352,15 @@ export default function FarmPage() {
                               Harvesting...
                             </span>
                           ) : (
-                            <span className="text-gray-400">Idle</span>
+                            <span className="text-gray-400">🌾 Idle & Ready</span>
                           )}
+                        </p>
+                      </div>
+                      
+                      <div className="glass rounded-xl p-4">
+                        <p className="text-sm text-gray-400 mb-2">Capacity</p>
+                        <p className="text-xl font-bold text-blue-400">
+                          {capacity} Bots Maximum
                         </p>
                       </div>
                       
@@ -290,12 +371,30 @@ export default function FarmPage() {
                             <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
                             <>
-                              {assignedBotIds?.length || 0} Bot
+                              {assignedBotIds?.length || 0} / {capacity} Bot
                               {assignedBotIds?.length !== 1 && 's'}
                             </>
                           )}
                         </p>
                       </div>
+                      
+                      {/* Manage Bots Button */}
+                      <button
+                        onClick={() => setShowBotModal(true)}
+                        className="w-full btn btn-secondary flex items-center justify-center gap-2"
+                      >
+                        <Settings className="h-4 w-4" />
+                        Manage Bots
+                      </button>
+                      
+                      {/* Harvest Calculator */}
+                      {botIds && botIds.length > 0 && (
+                        <HarvestCalculator
+                          landType={landType || 0}
+                          botType={0} // Using first bot (Basic for now - can be enhanced)
+                          baseHarvest={10}
+                        />
+                      )}
                     </div>
                   )}
                 </div>
@@ -308,7 +407,7 @@ export default function FarmPage() {
                   </h3>
                   
                   {/* Pending Harvest */}
-                  <div className="glass rounded-2xl p-6 mb-6">
+                  <div className="glass rounded-2xl p-6 mb-6 space-y-4">
                     <p className="text-sm text-gray-400 mb-3">Pending Harvest</p>
                     <div className="flex items-baseline gap-3 mb-4">
                       <span className="text-5xl font-bold text-primary">
@@ -321,13 +420,35 @@ export default function FarmPage() {
                       <span className="text-2xl text-gray-400">$ORANGE</span>
                     </div>
                     
+                    {/* Real-time Countdown Timer */}
+                    {isActive && !isReady && (
+                      <CountdownTimer 
+                        timeRemaining={timeRemaining}
+                        onComplete={() => {
+                          refetchPendingHarvest()
+                          toast.success('🎉 Harvest is ready to collect!', { duration: 5000 })
+                        }}
+                        className="mb-4"
+                      />
+                    )}
+                    
+                    {/* Progress Bar */}
+                    {isActive && readyAt && (
+                      <HarvestProgressBar
+                        startTime={readyAt ? readyAt - 600n : undefined} // Assuming 600s harvest cycle
+                        duration={600}
+                        isActive={isActive}
+                        className="mb-4"
+                      />
+                    )}
+                    
                     {/* Harvest Status */}
                     {landInfo?.isHarvesting && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-400">Harvest Status</span>
                           <span className={`font-semibold ${isReady ? 'text-green-400' : 'text-yellow-400'}`}>
-                            {isReady ? 'Ready' : 'In Progress'}
+                            {isReady ? '✨ Ready to Collect' : '🌱 Growing...'}
                           </span>
                         </div>
                       </div>
@@ -355,42 +476,64 @@ export default function FarmPage() {
                         )}
                       </button>
                     ) : (
-                      <button
-                        onClick={handleCompleteHarvest}
-                        disabled={isCompletingHarvest || isWaitingCompleteHarvest || !isReady}
-                        className="w-full btn btn-primary py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isCompletingHarvest || isWaitingCompleteHarvest ? (
-                          <>
-                            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                            Completing Harvest...
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-5 w-5 mr-2" />
-                            Complete Harvest
-                          </>
-                        )}
-                      </button>
+                      <>
+                        <button
+                          onClick={handleCompleteHarvest}
+                          disabled={isCompletingHarvest || isWaitingCompleteHarvest || !isReady}
+                          className="w-full btn btn-primary py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isCompletingHarvest || isWaitingCompleteHarvest ? (
+                            <>
+                              <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                              Completing Harvest...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="h-5 w-5 mr-2" />
+                              Complete Harvest {isReady ? '✨' : '(Not Ready Yet)'}
+                            </>
+                          )}
+                        </button>
+                        
+                        {/* Cancel Button */}
+                        <button
+                          onClick={handleCancelHarvest}
+                          disabled={isCancellingHarvest || isWaitingCancelHarvest}
+                          className="w-full btn btn-outline border-red-500/30 hover:border-red-500 text-red-400 py-3 text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isCancellingHarvest || isWaitingCancelHarvest ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Cancelling...
+                            </>
+                          ) : (
+                            <>
+                              <X className="h-4 w-4 mr-2" />
+                              Cancel Harvest
+                            </>
+                          )}
+                        </button>
+                      </>
                     )}
                     
                     {/* Error Messages */}
-                    {(startHarvestError || completeHarvestError) && (
+                    {(startHarvestError || completeHarvestError || cancelHarvestError) && (
                       <div className="flex items-start gap-2 p-4 rounded-xl bg-red-500/10 border border-red-500/30">
                         <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
                         <p className="text-sm text-red-400">
-                          {(startHarvestError ?? completeHarvestError)?.message ?? 'Transaction failed'}
+                          {(startHarvestError ?? completeHarvestError ?? cancelHarvestError)?.message ?? 'Transaction failed'}
                         </p>
                       </div>
                     )}
                     
                     {/* Success Messages */}
-                    {(startHarvestSuccess || completeHarvestSuccess) && (
+                    {(startHarvestSuccess || completeHarvestSuccess || cancelHarvestSuccess) && (
                       <div className="flex items-start gap-2 p-4 rounded-xl bg-green-500/10 border border-green-500/30">
                         <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
                         <p className="text-sm text-green-400">
-                          {startHarvestSuccess && 'Harvest started successfully!'}
-                          {completeHarvestSuccess && 'Harvest completed! Tokens credited to your balance.'}
+                          {startHarvestSuccess && 'Harvest started successfully! 🌱'}
+                          {completeHarvestSuccess && 'Harvest completed! Tokens credited to your balance. 🍊'}
+                          {cancelHarvestSuccess && 'Harvest cancelled successfully.'}
                         </p>
                       </div>
                     )}
@@ -457,6 +600,20 @@ export default function FarmPage() {
             </>
           )}
         </>
+      )}
+      
+      {/* Bot Assignment Modal */}
+      {selectedLand && (
+        <BotAssignmentModal
+          isOpen={showBotModal}
+          onClose={() => setShowBotModal(false)}
+          landId={selectedLand}
+          assignedBotIds={Array.from(assignedBotIds || [])}
+          onSuccess={() => {
+            // Refetch data after successful assignment
+            window.location.reload() // Simple reload for now
+          }}
+        />
       )}
     </div>
   )

@@ -360,6 +360,79 @@ export function useClaimStarterPack() {
 }
 
 /**
+ * Hook to claim daily mint (100 ORANGE tokens)
+ */
+export function useDailyMint() {
+  const { writeContract, data: hash, isPending, isSuccess, error } = useWriteContract()
+
+  const claimDaily = () => {
+    writeContract({
+      address: CONTRACTS.mockOrangeToken,
+      abi: ABIS.mockOrangeToken,
+      functionName: 'dailyMint',
+    })
+  }
+
+  return {
+    claimDaily,
+    hash,
+    isPending,
+    isSuccess,
+    error,
+  }
+}
+
+/**
+ * Hook to check if user can claim daily mint
+ */
+export function useCanMintDaily() {
+  const { address } = useAccount()
+
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: CONTRACTS.mockOrangeToken,
+    abi: ABIS.mockOrangeToken,
+    functionName: 'canMintDaily',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address && CONTRACTS.mockOrangeToken !== '0x',
+      refetchInterval: 60000, // Check every minute
+    },
+  })
+
+  return {
+    canMint: data as boolean | undefined,
+    isLoading,
+    error,
+    refetch,
+  }
+}
+
+/**
+ * Hook to get time until next daily mint
+ */
+export function useTimeUntilNextMint() {
+  const { address } = useAccount()
+
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: CONTRACTS.mockOrangeToken,
+    abi: ABIS.mockOrangeToken,
+    functionName: 'getTimeUntilNextMint',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address && CONTRACTS.mockOrangeToken !== '0x',
+      refetchInterval: 10000, // Update every 10 seconds
+    },
+  })
+
+  return {
+    timeRemaining: data as bigint | undefined,
+    isLoading,
+    error,
+    refetch,
+  }
+}
+
+/**
  * Hook to watch for player registration events
  */
 export function useWatchPlayerRegistrations(onRegistration?: (player: string) => void) {
@@ -503,7 +576,7 @@ export function useUserLands() {
   const { data, isLoading, error, refetch } = useReadContract({
     address: CONTRACTS.landNFT,
     abi: ABIS.landNFT,
-    functionName: 'getLandsByOwner',
+    functionName: 'getOwnerLands',
     args: address ? [address] : undefined,
     query: {
       enabled: !!address && CONTRACTS.landNFT !== '0x',
@@ -555,7 +628,7 @@ export function useUserBots() {
   const { data, isLoading, error, refetch } = useReadContract({
     address: CONTRACTS.botNFT,
     abi: ABIS.botNFT,
-    functionName: 'getBotsByOwner',
+    functionName: 'getOwnerBots',
     args: address ? [address] : undefined,
     query: {
       enabled: !!address && CONTRACTS.botNFT !== '0x',
@@ -609,6 +682,40 @@ export function useBotInfo(botId: bigint | undefined) {
 }
 
 /**
+ * Hook to get bot data (simplified version using botData mapping)
+ */
+export function useBotData(botId: bigint | undefined) {
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: CONTRACTS.botNFT,
+    abi: ABIS.botNFT,
+    functionName: 'botData',
+    args: botId ? [botId] : undefined,
+    query: {
+      enabled: !!botId && CONTRACTS.botNFT !== '0x',
+    },
+  })
+
+  const botData = data as readonly [
+    number,  // botType
+    number,  // efficiency
+    number,  // totalHarvests
+    bigint,  // creationTimestamp
+    bigint   // assignedLandId
+  ] | undefined
+
+  return {
+    botType: botData?.[0],
+    efficiency: botData?.[1],
+    totalHarvests: botData?.[2],
+    creationTimestamp: botData?.[3],
+    assignedLandId: botData?.[4],
+    isLoading,
+    error,
+    refetch,
+  }
+}
+
+/**
  * Hook to get pending harvest for a land (RealTimeHarvest)
  */
 export function usePendingHarvest(landId: bigint | undefined) {
@@ -623,12 +730,13 @@ export function usePendingHarvest(landId: bigint | undefined) {
     },
   })
 
-  const harvestData = data as { amount: bigint; readyAt: bigint; isReady: boolean } | undefined
+  const harvestData = data as { amount: bigint; readyAt: bigint; isReady: boolean; isActive: boolean } | undefined
 
   return {
     amount: harvestData?.amount || 0n,
     readyAt: harvestData?.readyAt,
     isReady: harvestData?.isReady || false,
+    isActive: harvestData?.isActive || false,
     isLoading,
     error,
     refetch,
@@ -684,6 +792,170 @@ export function useCompleteHarvest() {
 }
 
 /**
+ * Hook to check if a harvest is ready
+ */
+export function useIsHarvestReady(landId: bigint | undefined) {
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: CONTRACTS.realTimeHarvest,
+    abi: ABIS.realTimeHarvest,
+    functionName: 'isHarvestReady',
+    args: landId ? [landId] : undefined,
+    query: {
+      enabled: !!landId && CONTRACTS.realTimeHarvest !== '0x',
+      refetchInterval: 1000, // Check every second
+    },
+  })
+
+  return {
+    isReady: data as boolean | undefined,
+    isLoading,
+    error,
+    refetch,
+  }
+}
+
+/**
+ * Hook to get time remaining until harvest is ready
+ */
+export function useTimeRemaining(landId: bigint | undefined) {
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: CONTRACTS.realTimeHarvest,
+    abi: ABIS.realTimeHarvest,
+    functionName: 'getTimeRemaining',
+    args: landId ? [landId] : undefined,
+    query: {
+      enabled: !!landId && CONTRACTS.realTimeHarvest !== '0x',
+      refetchInterval: 1000, // Update every second for countdown
+    },
+  })
+
+  return {
+    timeRemaining: data as bigint | undefined,
+    isLoading,
+    error,
+    refetch,
+  }
+}
+
+/**
+ * Hook to get batch pending harvests for multiple lands
+ */
+export function useBatchPendingHarvests(landIds: readonly bigint[] | undefined) {
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: CONTRACTS.realTimeHarvest,
+    abi: ABIS.realTimeHarvest,
+    functionName: 'getBatchPendingHarvests',
+    args: landIds ? [landIds] : undefined,
+    query: {
+      enabled: !!landIds && landIds.length > 0 && CONTRACTS.realTimeHarvest !== '0x',
+      refetchInterval: 5000,
+    },
+  })
+
+  const batchData = data as {
+    amounts: readonly bigint[]
+    readyTimes: readonly bigint[]
+    statuses: readonly boolean[]
+    actives: readonly boolean[]
+  } | undefined
+
+  return {
+    amounts: batchData?.amounts || [],
+    readyTimes: batchData?.readyTimes || [],
+    statuses: batchData?.statuses || [],
+    actives: batchData?.actives || [],
+    isLoading,
+    error,
+    refetch,
+  }
+}
+
+/**
+ * Hook to calculate estimated harvest amount
+ */
+export function useCalculateHarvestAmount(landId: bigint | undefined, botId: bigint | undefined) {
+  const { data, isLoading, error } = useReadContract({
+    address: CONTRACTS.realTimeHarvest,
+    abi: ABIS.realTimeHarvest,
+    functionName: 'calculateHarvestAmount',
+    args: landId && botId ? [landId, botId] : undefined,
+    query: {
+      enabled: !!landId && !!botId && CONTRACTS.realTimeHarvest !== '0x',
+    },
+  })
+
+  return {
+    estimatedAmount: data as bigint | undefined,
+    isLoading,
+    error,
+  }
+}
+
+/**
+ * Hook to cancel an active harvest
+ */
+export function useCancelHarvest() {
+  const { writeContract, data: hash, isPending, isSuccess, error } = useWriteContract()
+
+  const cancelHarvest = (landId: bigint) => {
+    writeContract({
+      address: CONTRACTS.realTimeHarvest,
+      abi: ABIS.realTimeHarvest,
+      functionName: 'cancelHarvest',
+      args: [landId],
+    })
+  }
+
+  return {
+    cancelHarvest,
+    hash,
+    isPending,
+    isSuccess,
+    error,
+  }
+}
+
+/**
+ * Hook to watch for harvest started events
+ */
+export function useWatchHarvestStarted(onHarvestStarted?: (landId: bigint, botId: bigint, amount: bigint) => void) {
+  useWatchContractEvent({
+    address: CONTRACTS.realTimeHarvest,
+    abi: ABIS.realTimeHarvest,
+    eventName: 'HarvestStarted',
+    onLogs(logs) {
+      logs.forEach((log) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const args = (log as any).args
+        if (onHarvestStarted && args?.landId && args?.botId && args?.estimatedAmount) {
+          onHarvestStarted(args.landId as bigint, args.botId as bigint, args.estimatedAmount as bigint)
+        }
+      })
+    },
+  })
+}
+
+/**
+ * Hook to watch for harvest completed events
+ */
+export function useWatchHarvestCompleted(onHarvestCompleted?: (landId: bigint, player: string, amount: bigint) => void) {
+  useWatchContractEvent({
+    address: CONTRACTS.realTimeHarvest,
+    abi: ABIS.realTimeHarvest,
+    eventName: 'HarvestCompleted',
+    onLogs(logs) {
+      logs.forEach((log) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const args = (log as any).args
+        if (onHarvestCompleted && args?.landId && args?.player && args?.amount) {
+          onHarvestCompleted(args.landId as bigint, args.player as string, args.amount as bigint)
+        }
+      })
+    },
+  })
+}
+
+/**
  * Hook to get bots assigned to a land
  */
 export function useAssignedBots(landId: bigint | undefined) {
@@ -702,6 +974,54 @@ export function useAssignedBots(landId: bigint | undefined) {
     isLoading,
     error,
     refetch,
+  }
+}
+
+/**
+ * Hook to assign a bot to a land
+ */
+export function useAddBotToLand() {
+  const { writeContract, data: hash, isPending, isSuccess, error } = useWriteContract()
+
+  const addBotToLand = (landId: bigint, botId: bigint) => {
+    writeContract({
+      address: CONTRACTS.landNFT,
+      abi: ABIS.landNFT,
+      functionName: 'addBotToLand',
+      args: [landId, botId],
+    })
+  }
+
+  return {
+    addBotToLand,
+    hash,
+    isPending,
+    isSuccess,
+    error,
+  }
+}
+
+/**
+ * Hook to remove a bot from a land
+ */
+export function useRemoveBotFromLand() {
+  const { writeContract, data: hash, isPending, isSuccess, error } = useWriteContract()
+
+  const removeBotFromLand = (landId: bigint, botId: bigint) => {
+    writeContract({
+      address: CONTRACTS.landNFT,
+      abi: ABIS.landNFT,
+      functionName: 'removeBotFromLand',
+      args: [landId, botId],
+    })
+  }
+
+  return {
+    removeBotFromLand,
+    hash,
+    isPending,
+    isSuccess,
+    error,
   }
 }
 
