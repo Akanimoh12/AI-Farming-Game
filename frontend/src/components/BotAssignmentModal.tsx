@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Bot, CheckCircle, AlertCircle, Loader2, Zap, TrendingUp } from 'lucide-react'
+import { X, Bot, CheckCircle, Loader2, Zap, TrendingUp } from 'lucide-react'
 import { useAddBotToLand, useRemoveBotFromLand, useBotData, useUserBots } from '@/hooks/useContracts'
 import { useWaitForTransactionReceipt } from 'wagmi'
 import toast from 'react-hot-toast'
@@ -31,7 +31,6 @@ export default function BotAssignmentModal({
     addBotToLand,
     hash: assignHash,
     isPending: isAssigning,
-    isSuccess: assignSuccess,
     error: assignError,
   } = useAddBotToLand()
 

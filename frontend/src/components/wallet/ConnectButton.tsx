@@ -1,5 +1,4 @@
 import { ConnectButton as RainbowKitConnectButton } from '@rainbow-me/rainbowkit'
-import { useAccount } from 'wagmi'
 import { Button } from '@components/common'
 
 export function ConnectButton() {

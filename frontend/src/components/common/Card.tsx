@@ -1,7 +1,9 @@
-import { forwardRef, HTMLAttributes, ReactNode } from 'react'
+import { forwardRef, type HTMLAttributes, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
 
-export interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, 'className'> {
+export interface CardProps extends Omit<HTMLAttributes<HTMLDivElement>, 
+  'className' | 'onDrag' | 'onDragStart' | 'onDragEnd' | 'onAnimationStart' | 'onAnimationEnd'
+> {
   children: ReactNode
   variant?: 'default' | 'glass' | 'bordered' | 'elevated'
   hover?: boolean

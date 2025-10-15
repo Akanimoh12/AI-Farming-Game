@@ -1,4 +1,4 @@
-import { HTMLAttributes } from 'react'
+import { type HTMLAttributes } from 'react'
 
 export interface LoadingSpinnerProps extends Omit<HTMLAttributes<HTMLDivElement>, 'className'> {
   size?: 'sm' | 'md' | 'lg' | 'xl'

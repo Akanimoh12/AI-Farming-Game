@@ -41,7 +41,7 @@ import BotAssignmentModal from '../components/BotAssignmentModal'
 import { toast } from 'sonner'
 
 export default function FarmPage() {
-  const { isConnected, address } = useAccount()
+  const { isConnected } = useAccount()
   const navigate = useNavigate()
   const [selectedLand, setSelectedLand] = useState<bigint | undefined>()
   const [showBotModal, setShowBotModal] = useState(false)
@@ -89,7 +89,6 @@ export default function FarmPage() {
   const {
     startTime: harvestStartTime,
     duration: harvestDuration,
-    estimatedAmount: rawEstimatedAmount,
   } = usePendingHarvestRaw(selectedLand)
   
   // Time remaining for active harvest
