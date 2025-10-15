@@ -555,12 +555,14 @@ export function useReferralData(playerAddress?: string) {
     },
   })
 
-  const referralData = data as { referrer: string; referredPlayers: readonly string[]; totalRewards: bigint } | undefined
+  // Solidity returns tuple (address, address[], uint256)
+  // wagmi returns it as an array [referrer, referredPlayers, totalRewards]
+  const referralData = data as readonly [string, readonly string[], bigint] | undefined
 
   return {
-    referrer: referralData?.referrer,
-    referredPlayers: referralData?.referredPlayers || [],
-    totalRewards: referralData?.totalRewards || 0n,
+    referrer: referralData?.[0],
+    referredPlayers: referralData?.[1] || [],
+    totalRewards: referralData?.[2] || 0n,
     isLoading,
     error,
     refetch,
@@ -602,6 +604,7 @@ export function useLandInfo(landId: bigint | undefined) {
     args: landId ? [landId] : undefined,
     query: {
       enabled: !!landId && CONTRACTS.landNFT !== '0x',
+      // No refetchInterval - land info is static and doesn't change frequently
     },
   })
 
@@ -730,13 +733,47 @@ export function usePendingHarvest(landId: bigint | undefined) {
     },
   })
 
-  const harvestData = data as { amount: bigint; readyAt: bigint; isReady: boolean; isActive: boolean } | undefined
+  // Solidity returns tuple (uint256, uint64, bool, bool)
+  // wagmi returns it as array [amount, readyAt, isReady, isActive]
+  const harvestData = data as readonly [bigint, bigint, boolean, boolean] | undefined
 
   return {
-    amount: harvestData?.amount || 0n,
-    readyAt: harvestData?.readyAt,
-    isReady: harvestData?.isReady || false,
-    isActive: harvestData?.isActive || false,
+    amount: harvestData?.[0] || 0n,
+    readyAt: harvestData?.[1],
+    isReady: harvestData?.[2] || false,
+    isActive: harvestData?.[3] || false,
+    isLoading,
+    error,
+    refetch,
+  }
+}
+
+/**
+ * Hook to get full pending harvest struct from public mapping (RealTimeHarvest)
+ */
+export function usePendingHarvestRaw(landId: bigint | undefined) {
+  const { data, isLoading, error, refetch } = useReadContract({
+    address: CONTRACTS.realTimeHarvest,
+    abi: ABIS.realTimeHarvest,
+    functionName: 'pendingHarvests',
+    args: landId ? [landId] : undefined,
+    query: {
+      enabled: !!landId && CONTRACTS.realTimeHarvest !== '0x',
+      refetchInterval: 5000,
+    },
+  })
+
+  // Public mapping returns full struct
+  // (uint256 landId, uint256 botId, uint256 estimatedAmount, uint64 startTime, uint64 duration, bool active)
+  const harvestStruct = data as readonly [bigint, bigint, bigint, bigint, bigint, boolean] | undefined
+
+  return {
+    landId: harvestStruct?.[0],
+    botId: harvestStruct?.[1],
+    estimatedAmount: harvestStruct?.[2] || 0n,
+    startTime: harvestStruct?.[3],
+    duration: harvestStruct?.[4],
+    active: harvestStruct?.[5] || false,
     isLoading,
     error,
     refetch,
@@ -966,11 +1003,14 @@ export function useAssignedBots(landId: bigint | undefined) {
     args: landId ? [landId] : undefined,
     query: {
       enabled: !!landId && CONTRACTS.landNFT !== '0x',
+      refetchInterval: 10000, // Refetch every 10 seconds (reduced from 3s to prevent flickering)
     },
   })
 
+  const botIds = (data as readonly bigint[]) || []
+
   return {
-    botIds: (data as readonly bigint[]) || [],
+    botIds,
     isLoading,
     error,
     refetch,

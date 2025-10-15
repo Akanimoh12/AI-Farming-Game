@@ -43,7 +43,7 @@ export default function Profile() {
   const { profile, isLoading: profileLoading } = usePlayerProfile(profileAddress)
   const { stats, isLoading: statsLoading } = usePlayerStats(profileAddress)
   const { rank, isLoading: rankLoading } = usePlayerRank(profileAddress)
-  const { referredPlayers, totalRewards } = useReferralData(profileAddress)
+  const { referredPlayers = [], totalRewards = 0n } = useReferralData(profileAddress)
   
   // Fetch assets
   const { landIds } = useUserLands()

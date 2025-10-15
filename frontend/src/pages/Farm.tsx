@@ -22,6 +22,7 @@ import {
   useLandInfo,
   useAssignedBots,
   usePendingHarvest,
+  usePendingHarvestRaw,
   useStartHarvest,
   useCompleteHarvest,
   useTimeRemaining,
@@ -52,22 +53,6 @@ export default function FarmPage() {
   const { landIds, isLoading: isLoadingLands, refetch: refetchLands } = useUserLands()
   const { botIds, isLoading: isLoadingBots } = useUserBots()
   
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 Farm Debug:', {
-      isConnected,
-      address,
-      isRegistered,
-      isCheckingRegistration,
-      landIds,
-      landIdsLength: landIds?.length,
-      isLoadingLands,
-      botIds,
-      botIdsLength: botIds?.length,
-      isLoadingBots
-    })
-  }, [isConnected, address, isRegistered, isCheckingRegistration, landIds, isLoadingLands, botIds, isLoadingBots])
-  
   // Selected land info
   const { 
     owner,
@@ -75,6 +60,20 @@ export default function FarmPage() {
     capacity,
     isLoading: isLoadingLandInfo 
   } = useLandInfo(selectedLand)
+  
+  // Debug land info (only log once when selected land changes, not on every render)
+  useEffect(() => {
+    if (selectedLand) {
+      console.log('🏞️ Land Info Debug:', {
+        selectedLand: selectedLand.toString(),
+        owner,
+        landType,
+        capacity,
+        isLoadingLandInfo,
+        hasOwner: !!owner,
+      })
+    }
+  }, [selectedLand]) // Only re-run when selectedLand changes
   
   // Pending harvest for selected land
   const { 
@@ -86,14 +85,45 @@ export default function FarmPage() {
     refetch: refetchPendingHarvest 
   } = usePendingHarvest(selectedLand)
   
+  // Get raw harvest data with startTime
+  const {
+    startTime: harvestStartTime,
+    duration: harvestDuration,
+    estimatedAmount: rawEstimatedAmount,
+  } = usePendingHarvestRaw(selectedLand)
+  
   // Time remaining for active harvest
   const { timeRemaining } = useTimeRemaining(selectedLand)
   
   // Assigned bots for selected land
   const { 
     botIds: assignedBotIds, 
-    isLoading: isLoadingAssignedBots 
+    isLoading: isLoadingAssignedBots,
+    refetch: refetchAssignedBots 
   } = useAssignedBots(selectedLand)
+  
+  // Debug logging (only when connection state changes, not every render)
+  useEffect(() => {
+    console.log('🔍 Farm Debug:', {
+      isConnected,
+      isRegistered,
+      landIdsLength: landIds?.length,
+      botIdsLength: botIds?.length,
+    })
+  }, [isConnected, isRegistered]) // Only log when connection/registration changes
+  
+  // Debug harvest data (only log when harvest state changes, not every second)
+  useEffect(() => {
+    if (selectedLand) {
+      console.log('🌾 Harvest Data Debug:', {
+        selectedLand: selectedLand.toString(),
+        amount: amount?.toString(),
+        isReady,
+        isActive,
+        assignedBotIds: assignedBotIds?.map(id => id.toString()),
+      })
+    }
+  }, [selectedLand, isActive, isReady, assignedBotIds?.length]) // Only log when important values change
   
   // Harvest actions
   const { 
@@ -128,6 +158,22 @@ export default function FarmPage() {
     useWaitForTransactionReceipt({ hash: cancelHarvestHash })
   
   const landInfo = owner ? { owner, landType, capacity, isHarvesting: isActive, lastHarvestTime: readyAt } : null
+  
+  // Debug button state (only log when button state actually changes)
+  useEffect(() => {
+    if (selectedLand) {
+      const buttonDisabled = isStartingHarvest || isWaitingStartHarvest || !assignedBotIds || assignedBotIds.length === 0
+      console.log('🎮 Start Harvest Button Debug:', {
+        selectedLand: selectedLand.toString(),
+        isStartingHarvest,
+        isWaitingStartHarvest,
+        isActive,
+        assignedBotIdsLength: assignedBotIds?.length || 0,
+        buttonDisabled,
+        shouldShowStartButton: !isActive,
+      })
+    }
+  }, [selectedLand, isStartingHarvest, isWaitingStartHarvest, isActive, assignedBotIds?.length]) // Removed isLoadingAssignedBots to reduce logs
   
   // Watch for harvest events
   useWatchHarvestStarted((landId, _botId, estimatedAmount) => {
@@ -189,9 +235,9 @@ export default function FarmPage() {
   
   // Handle start harvest
   const handleStartHarvest = () => {
-    if (!selectedLand || !botIds || botIds.length === 0) return
-    // Use first available bot
-    startHarvest(selectedLand, botIds[0])
+    if (!selectedLand || !assignedBotIds || assignedBotIds.length === 0) return
+    // Use first assigned bot for this land
+    startHarvest(selectedLand, assignedBotIds[0])
   }
   
   // Handle complete harvest
@@ -433,10 +479,10 @@ export default function FarmPage() {
                     )}
                     
                     {/* Progress Bar */}
-                    {isActive && readyAt && (
+                    {isActive && harvestStartTime && harvestDuration && (
                       <HarvestProgressBar
-                        startTime={readyAt ? readyAt - 600n : undefined} // Assuming 600s harvest cycle
-                        duration={600}
+                        startTime={harvestStartTime}
+                        duration={Number(harvestDuration)}
                         isActive={isActive}
                         className="mb-4"
                       />
@@ -457,16 +503,21 @@ export default function FarmPage() {
                   
                   {/* Action Buttons */}
                   <div className="space-y-4">
-                    {!landInfo?.isHarvesting ? (
+                    {!isActive ? (
                       <button
                         onClick={handleStartHarvest}
-                        disabled={isStartingHarvest || isWaitingStartHarvest || !landInfo}
+                        disabled={isStartingHarvest || isWaitingStartHarvest || !assignedBotIds || assignedBotIds.length === 0}
                         className="w-full btn btn-primary py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isStartingHarvest || isWaitingStartHarvest ? (
                           <>
                             <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                             Starting Harvest...
+                          </>
+                        ) : !assignedBotIds || assignedBotIds.length === 0 ? (
+                          <>
+                            <Play className="h-5 w-5 mr-2" />
+                            Assign a Bot First
                           </>
                         ) : (
                           <>
@@ -610,8 +661,10 @@ export default function FarmPage() {
           landId={selectedLand}
           assignedBotIds={Array.from(assignedBotIds || [])}
           onSuccess={() => {
-            // Refetch data after successful assignment
-            window.location.reload() // Simple reload for now
+            // Refetch assigned bots data after successful assignment
+            console.log('✅ Bot assignment successful, refetching data...')
+            refetchAssignedBots()
+            refetchLands()
           }}
         />
       )}
