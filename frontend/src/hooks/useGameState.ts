@@ -32,7 +32,7 @@ export function useGameState(): UseGameStateReturn {
     setIsLoading(true)
     const unsubscribe = subscribeToCollection<PlotState>(
       'plots',
-      (data) => {
+      (data: PlotState[]) => {
         setPlots(data)
         setIsLoading(false)
       },

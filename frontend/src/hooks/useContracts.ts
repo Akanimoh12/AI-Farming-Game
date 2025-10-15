@@ -441,7 +441,7 @@ export function useWatchPlayerRegistrations(onRegistration?: (player: string) =>
     abi: ABIS.gameRegistry,
     eventName: 'PlayerRegistered',
     onLogs(logs) {
-      logs.forEach((log) => {
+      logs.forEach((log: any) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const args = (log as any).args
         if (onRegistration && args?.player) {
@@ -961,7 +961,7 @@ export function useWatchHarvestStarted(onHarvestStarted?: (landId: bigint, botId
     abi: ABIS.realTimeHarvest,
     eventName: 'HarvestStarted',
     onLogs(logs) {
-      logs.forEach((log) => {
+      logs.forEach((log: any) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const args = (log as any).args
         if (onHarvestStarted && args?.landId && args?.botId && args?.estimatedAmount) {
@@ -981,7 +981,7 @@ export function useWatchHarvestCompleted(onHarvestCompleted?: (landId: bigint, p
     abi: ABIS.realTimeHarvest,
     eventName: 'HarvestCompleted',
     onLogs(logs) {
-      logs.forEach((log) => {
+      logs.forEach((log: any) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const args = (log as any).args
         if (onHarvestCompleted && args?.landId && args?.player && args?.amount) {
