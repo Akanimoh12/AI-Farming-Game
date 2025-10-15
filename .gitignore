@@ -27,6 +27,7 @@ contracts/broadcast/
 # Dependencies
 node_modules/
 lib/
+!frontend/src/lib/
 
 # Environment variables
 .env
